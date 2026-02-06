@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Relatos</title>
+
+  <style>
+    /* =====================
+       RESET + BASE
+    ====================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000814, #001d3d);
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      color: #fff;
+    }
+
+    /* =====================
+       LAYOUT PRINCIPAL
+    ====================== */
+    .app {
+      width: 100%;
+      max-width: 720px;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* =====================
+       TOPO / FILTROS
+    ====================== */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .categories {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .category {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+    }
+
+    .category.active {
+      background: rgba(138, 43, 226, 0.6);
+    }
+
+    /* =====================
+       RELATOS
+    ====================== */
+    .feed {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .relato {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .relato-header {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .relato-text {
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .relato-actions {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* =====================
+       BOTÕES
+    ====================== */
+    .btn-primary {
+      background: rgba(138, 43, 226, 0.65);
+      padding: 10px 18px;
+      border-radius: 10px;
+      transition: 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: rgba(138, 43, 226, 0.9);
+    }
+
+    .floating-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 16px 20px;
+      border-radius: 999px;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+    }
+
+    /* =====================
+       MODAIS
+    ====================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal {
+      background: #020b1f;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal input,
+    .modal select,
+    .modal textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .modal textarea {
+      resize: none;
+      min-height: 100px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <div class="top-bar">
+        <h2>Relatos</h2>
+        <button class="btn-primary" onclick="openLogin()">Entrar</button>
+      </div>
+
+      <div class="categories">
+        <div class="category active">Todos</div>
+        <div class="category">Amor</div>
+        <div class="category">Trabalho</div>
+        <div class="category">Desabafo</div>
+        <div class="category">Mistério</div>
+      </div>
+    </header>
+
+    <main class="feed">
+      <div class="relato">
+        <div class="relato-header">Anônimo · Desabafo</div>
+        <div class="relato-text">
+          Às vezes sinto que estou vivendo no piloto automático e ninguém percebe.
+        </div>
+        <div class="relato-actions">
+          ❤️ Curtir
+          💬 Comentar
+        </div>
+      </div>
+
+      <div class="relato">
+        <div class="relato-header">Gabriel · Trabalho</div>
+        <div class="relato-text">
+          Trabalhar com tecnologia é incrível, mas o burnout chega silencioso.
+        </div>
+        <div class="relato-actions">
+          ❤️ Curtir
+          💬 Comentar
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- BOTÃO FLUTUANTE -->
+  <button class="btn-primary floating-btn" onclick="openCreateRelato()">
+    🎲 Relato aleatório
+  </button>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <div class="modal-title">Entrar</div>
+      <input placeholder="Email" />
+      <input type="password" placeholder="Senha" />
+      <button class="btn-primary">Entrar</button>
+      <button class="btn-primary">Entrar com Google</button>
+    </div>
+  </div>
+
+  <!-- MODAL CRIAR RELATO -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal">
+      <div class="modal-title">Novo Relato</div>
+      <textarea placeholder="Escreva seu relato..."></textarea>
+
+      <select>
+        <option>Desabafo</option>
+        <option>Amor</option>
+        <option>Trabalho</option>
+        <option>Mistério</option>
+      </select>
+
+      <label>
+        <input type="checkbox" />
+        Publicar como anônimo
+      </label>
+
+      <button class="btn-primary">Publicar</button>
+    </div>
+  </div>
+
+  <script>
+    // Controle simples de modais
+    function openLogin() {
+      document.getElementById("loginModal").style.display = "flex";
+    }
+
+    function openCreateRelato() {
+      document.getElementById("createModal").style.display = "flex";
+    }
+
+    document.querySelectorAll(".modal-overlay").forEach(modal => {
+      modal.addEventListener("click", e => {
+        if (e.target === modal) modal.style.display = "none";
+      });
+    });
+  </script>
+</body>
+</html>
