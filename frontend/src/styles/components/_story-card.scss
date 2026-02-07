@@ -1,0 +1,78 @@
+.story-card {
+  @apply rounded-[2rem] p-8 mb-8;
+  @extend .glass-morphism-card;
+}
+
+.story-card-header {
+  @apply flex justify-between items-start mb-6;
+}
+
+.story-author-info {
+  @apply flex items-center gap-4;
+}
+
+.author-avatar-badge {
+  @apply w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-xl shadow-indigo-500/20 ring-1 ring-white/10 overflow-hidden relative transition-transform;
+
+  .story-card:hover & {
+    @apply rotate-3;
+  }
+}
+
+.author-name {
+  @apply font-bold text-lg text-white tracking-tight leading-none mb-1.5;
+}
+
+.story-meta {
+  @apply flex items-center gap-2;
+}
+
+.story-category-tag {
+  @apply text-xs font-semibold text-indigo-400/80 uppercase tracking-widest;
+}
+
+.story-content-text {
+  @apply text-zinc-200 leading-[1.7] whitespace-pre-line text-[1.1rem] font-light tracking-wide selection:bg-indigo-500/40 mb-8;
+}
+
+.story-actions {
+  @apply flex items-center gap-4 border-t border-white/5 pt-6;
+}
+
+.action-btn {
+  @apply flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all font-semibold text-sm border border-transparent;
+
+  &.like-btn {
+    @apply text-zinc-400 hover:text-pink-400 hover:bg-pink-400/5;
+    &.active {
+      @apply bg-pink-500/10 text-pink-500 border-pink-500/20;
+    }
+  }
+
+  &.comment-btn {
+    @apply text-zinc-400 hover:text-indigo-400 hover:bg-indigo-400/5;
+    &.active {
+      @apply bg-indigo-500/10 text-indigo-400 border-indigo-500/20;
+    }
+  }
+
+  &.share-btn {
+    @apply text-zinc-400 hover:text-blue-400 hover:bg-blue-400/5 ml-auto;
+  }
+}
+
+.comments-section {
+  @apply overflow-hidden mt-8 pt-8 border-t border-white/5 space-y-6;
+}
+
+.comment-item {
+  @apply flex gap-4;
+}
+
+.comment-bubble {
+  @apply bg-white/5 border border-white/5 rounded-2xl rounded-tl-none p-4 flex-1 text-sm shadow-sm transition-all;
+
+  .comment-item:hover & {
+    @apply border-indigo-500/20;
+  }
+}

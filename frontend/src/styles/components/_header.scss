@@ -1,0 +1,59 @@
+.header-main {
+  @apply fixed top-0 left-0 right-0 z-50 px-6 lg:px-12 py-6 pointer-events-none;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 1, 24, 0.8) 0%,
+    rgba(10, 1, 24, 0) 100%
+  );
+  backdrop-filter: blur(20px);
+}
+
+.header-container {
+  @apply max-w-[1920px] mx-auto flex justify-between items-center h-20;
+}
+
+.header-interactive {
+  @apply pointer-events-auto flex items-center gap-5;
+}
+
+.profile-button {
+  @apply flex items-center gap-4 bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-purple-900/40 backdrop-blur-xl px-5 py-3 rounded-full border border-purple-500/30 shadow-2xl hover:border-purple-400/50 hover:shadow-purple-500/20 transition-all duration-500;
+}
+
+.profile-avatar {
+  @apply w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white text-base font-bold shadow-xl ring-2 ring-purple-400/20 group-hover:ring-purple-400/50 group-hover:scale-110 transition-all duration-300;
+}
+
+.profile-dropdown {
+  @apply absolute top-full right-0 mt-4 w-72 rounded-3xl shadow-2xl overflow-hidden py-2 border border-purple-500/20;
+  @extend .glass-morphism;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 28, 135, 0.3),
+    rgba(67, 56, 202, 0.3)
+  );
+}
+
+.auth-trigger-button {
+  @apply w-14 h-14 rounded-2xl flex items-center justify-center text-purple-300 hover:text-white hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] transition-all duration-500;
+  @extend .glass-morphism;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 28, 135, 0.2),
+    rgba(67, 56, 202, 0.2)
+  );
+}
+
+.auth-modal-content {
+  @apply w-full max-w-lg p-12 rounded-[3rem] relative shadow-2xl overflow-hidden border border-purple-500/20;
+  @extend .glass-morphism;
+  background: linear-gradient(
+    135deg,
+    rgba(26, 11, 46, 0.95),
+    rgba(22, 33, 62, 0.95)
+  );
+}
+
+.google-auth-button {
+  @apply w-full py-4 rounded-2xl bg-white text-slate-900 font-bold flex items-center justify-center gap-3 hover:bg-zinc-100 hover:scale-[1.02] transition-all shadow-xl;
+}

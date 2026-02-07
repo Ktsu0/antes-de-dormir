@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
-import { User, LogOut, PenTool, ChevronDown, ShieldCheck } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import Logo from "./Logo";
 import { supabase } from "../lib/supabase";
 import CategoryFilter from "./CategoryFilter";
@@ -12,33 +12,46 @@ const Header = ({ onOpenCreate }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(""); // Add username state
   const [loading, setLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    console.log("Tentando autenticação...", { isLogin, email }); // DEBUG
     setLoading(true);
     try {
       if (isLogin) {
-        await login(email, password);
+        console.log("Chamando login...");
+        const result = await login(email, password);
+        console.log("Login sucesso:", result);
       } else {
-        await signUp(email, password);
+        console.log("Chamando cadastro...");
+        const result = await signUp(email, password, { nomeUsuario: username });
+        console.log("Cadastro sucesso:", result);
       }
       setShowAuthModal(false);
     } catch (error) {
-      alert(error.message);
+      console.error("ERRO DE AUTH:", error); // DEBUG
+      alert("Erro: " + error.message);
     }
     setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
+    console.log("Iniciando Google Auth...");
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
+        options: {
+          redirectTo: window.location.origin, // Força redirecionamento para a URL atual
+        },
       });
       if (error) throw error;
+      console.log("Redirecionando para Google...", data);
     } catch (error) {
-      alert("Precisa configurar o Google Auth no Supabase: " + error.message);
+      console.error("ERRO GOOGLE:", error);
+      alert("Erro Google: " + error.message);
     }
   };
 
@@ -48,100 +61,80 @@ const Header = ({ onOpenCreate }) => {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-8 pointer-events-none"
+        className="header-main"
       >
-        <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
-          <div className="pointer-events-auto">
+        <div className="header-container">
+          <div className="flex items-center gap-6">
             <Logo />
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-4">
-            <CategoryFilter />
+          <div className="header-interactive">
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onOpenCreate}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <span>✍️</span> Escrever Fato
+                  </motion.button>
 
-            {user ? (
-              <div className="relative">
-                <motion.button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-xl p-1.5 pl-4 rounded-full border border-white/5 pr-1.5 shadow-xl hover:border-indigo-500/30 transition-all group"
-                >
-                  <div className="text-right hidden sm:block">
-                    <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-1">
-                      Online
-                    </p>
-                    <p className="text-xs text-white font-semibold truncate max-w-[100px]">
-                      {user.email?.split("@")[0]}
-                    </p>
-                  </div>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-lg ring-2 ring-transparent group-hover:ring-indigo-500/30 transition-all">
-                    {user.email?.[0].toUpperCase()}
-                  </div>
-                </motion.button>
-
-                <AnimatePresence>
-                  {showProfileMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute top-full right-0 mt-3 w-64 glass-morphism rounded-3xl shadow-2xl overflow-hidden py-2"
+                  <div className="relative">
+                    <motion.button
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="profile-button group"
                     >
-                      <div className="px-5 py-4 border-b border-white/5">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                            <User className="w-5 h-5" />
-                          </div>
-                          <div>
+                      <div className="profile-avatar">
+                        {(
+                          user.user_metadata?.nomeUser?.[0] || user.email?.[0]
+                        ).toUpperCase()}
+                      </div>
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {showProfileMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="profile-dropdown"
+                        >
+                          <div className="px-5 py-4 border-b border-white/5">
                             <p className="text-sm font-bold text-white truncate">
                               {user.email}
                             </p>
-                            <div className="flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3 text-indigo-400" />
-                              <p className="text-[10px] text-indigo-400/80 font-bold uppercase tracking-wider">
-                                Conta Protegida
-                              </p>
-                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div className="p-2 space-y-1">
-                        <button
-                          onClick={() => {
-                            onOpenCreate();
-                            setShowProfileMenu(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:text-white hover:bg-indigo-500/10 rounded-2xl transition-all group"
-                        >
-                          <PenTool className="w-4 h-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
-                          Novo Relato
-                        </button>
-                        <button
-                          onClick={() => {
-                            logout();
-                            setShowProfileMenu(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-2xl transition-all group"
-                        >
-                          <LogOut className="w-4 h-4 text-red-500/50 group-hover:text-red-400 transition-colors" />
-                          Finalizar Sessão
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAuthModal(true)}
-                className="w-12 h-12 rounded-2xl glass-morphism flex items-center justify-center text-zinc-400 hover:text-white hover:border-indigo-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.3)] transition-all duration-500 group"
-              >
-                <User className="w-6 h-6 group-hover:text-indigo-400 transition-colors" />
-              </motion.button>
-            )}
+                          <div className="p-2 space-y-1">
+                            <button
+                              onClick={() => {
+                                logout();
+                                setShowProfileMenu(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-2xl transition-all group"
+                            >
+                              <LogOut className="w-4 h-4 text-red-500/50 group-hover:text-red-400 transition-colors" />
+                              Sair
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-sm font-bold text-zinc-400 hover:text-white transition"
+                >
+                  Entrar
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </motion.header>
@@ -161,7 +154,7 @@ const Header = ({ onOpenCreate }) => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="glass-morphism w-full max-w-md p-10 rounded-[3rem] relative shadow-2xl overflow-hidden"
+              className="auth-modal-content"
             >
               <button
                 onClick={() => setShowAuthModal(false)}
@@ -188,7 +181,7 @@ const Header = ({ onOpenCreate }) => {
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleGoogleLogin}
-                  className="w-full py-4 rounded-2xl bg-white text-slate-900 font-bold flex items-center justify-center gap-3 hover:bg-zinc-100 transition-all shadow-xl"
+                  className="google-auth-button"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -220,6 +213,16 @@ const Header = ({ onOpenCreate }) => {
                 </div>
 
                 <form onSubmit={handleAuth} className="space-y-4">
+                  {!isLogin && (
+                    <input
+                      type="text"
+                      required
+                      className="input-mystical h-14 text-sm"
+                      placeholder="Como deseja ser chamado?"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                  )}
                   <input
                     type="email"
                     required
@@ -245,8 +248,8 @@ const Header = ({ onOpenCreate }) => {
                     {loading
                       ? "Sincronizando..."
                       : isLogin
-                        ? "Retornar ao Universo"
-                        : "Criar minha Essência"}
+                        ? "Entrar"
+                        : "Registre-se"}
                   </motion.button>
                 </form>
 

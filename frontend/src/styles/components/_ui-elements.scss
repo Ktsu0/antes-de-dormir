@@ -1,0 +1,23 @@
+.floating-btn {
+  @apply fixed bottom-10 right-10 z-[60] flex items-center justify-center px-8 py-4 bg-slate-950/80 backdrop-blur-2xl border border-indigo-500/30 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all overflow-hidden;
+
+  &::before {
+    content: "";
+    @apply absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent opacity-0 transition-opacity duration-500;
+  }
+
+  &:hover {
+    @apply shadow-[0_20px_80px_rgba(99,102,241,0.3)] border-indigo-400/50 scale-105;
+    &::before {
+      @apply opacity-100;
+    }
+  }
+}
+
+.floating-btn-icon {
+  @apply w-12 h-12 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-xl transition-transform duration-500;
+
+  .floating-btn:hover & {
+    @apply rotate-12;
+  }
+}

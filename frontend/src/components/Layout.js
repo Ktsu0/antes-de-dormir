@@ -1,16 +1,11 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import MysticalBackground from "./MysticalBackground";
 
 const Layout = ({ children }) => {
   return (
-    <div className="relative min-h-screen selection:bg-indigo-500/30">
-      {/* Background Layer */}
-      <div className="mystical-bg" />
-      <div className="mystical-stars" />
-
-      {/* Atmosphere Glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen selection:bg-purple-500/30">
+      <MysticalBackground />
 
       {/* Main Content Area */}
       <div className="relative z-0">

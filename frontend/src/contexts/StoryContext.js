@@ -4,9 +4,10 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { CATEGORIES } from "../data/mockStories"; // Keep categories for UI filters
+import { CATEGORIES } from "../data/mockStories";
 
 const StoryContext = createContext();
 
@@ -14,30 +15,41 @@ export const useStories = () => useContext(StoryContext);
 
 export const StoryProvider = ({ children }) => {
   const [stories, setStories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ category: null });
 
+  // Ref para travar curtidas em andamento (evita re-render desnecessário)
+  const processingLikes = useRef(new Set());
+
+  // Load categories from local mock file (Static & Fast)
+  const fetchCategories = useCallback(() => {
+    const formattedCategories = CATEGORIES.map((cat, index) => ({
+      id: cat,
+      name: cat,
+    }));
+    setCategories(formattedCategories);
+  }, []);
+
   const fetchStories = useCallback(async () => {
     setLoading(true);
+
+    // Query ajustada: 'descricao' sem acento
     let query = supabase
       .from("relatos")
       .select(
         `
         *,
-        users (name),
-        curtidas (count),
-        comentarios (
-          id,
-          content,
-          created_at,
-          user_id
-        )
+        users!relatos_id_users_fkey(id_users, nomeUser),
+        curtidas:curtidas(count),
+        comentarios(*)
       `,
       )
-      .order("created_at", { ascending: false });
+      .order("id_relatos", { ascending: false });
 
+    // Filter by text column directly
     if (filters.category) {
-      query = query.eq("category", filters.category);
+      query = query.eq("nomeCategoria", filters.category);
     }
 
     const { data, error } = await query;
@@ -45,11 +57,20 @@ export const StoryProvider = ({ children }) => {
     if (error) {
       console.error("Error fetching stories:", error);
     } else {
-      // Map data to match UI expectations if necessary
       const formattedStories = data.map((story) => ({
         ...story,
-        likes: story.curtidas[0]?.count || 0, // specific to how supabase returns count
-        // If author is anonymous, we might need to handle that in the UI
+        id: story.id_relatos,
+        // Usando 'descricao' sem acento do banco, fallback para 'descrição' se ainda existir antigo
+        content: story.descricao || story.descrição,
+        category_name: story.nomeCategoria || "Geral",
+        author_name: story.users?.nomeUser || "Anônimo",
+        author_id: story.id_users,
+        likes: story.curtidas?.[0]?.count || 0,
+        comentarios: story.comentarios?.map((c) => ({
+          ...c,
+          id: c.id_comentarios,
+          content: c.descricao || c.descrição, // Ajuste aqui também
+        })),
       }));
       setStories(formattedStories);
     }
@@ -57,23 +78,25 @@ export const StoryProvider = ({ children }) => {
   }, [filters]);
 
   useEffect(() => {
+    fetchCategories();
     fetchStories();
-  }, [fetchStories]);
+  }, [fetchCategories, fetchStories]);
 
   const addStory = async (storyData) => {
-    const { content, category, is_anonymous } = storyData;
+    const { content, categoryName, is_anonymous } = storyData;
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) throw new Error("Must be logged in to post");
 
+    // Ajuste: 'descricao' sem acento
     const { error } = await supabase.from("relatos").insert([
       {
-        content,
-        category,
-        is_anonymous,
-        user_id: user.id,
+        descricao: content,
+        nomeCategoria: categoryName,
+        is_anonymous: is_anonymous,
+        id_users: user.id,
       },
     ]);
 
@@ -82,31 +105,70 @@ export const StoryProvider = ({ children }) => {
   };
 
   const likeStory = async (storyId) => {
+    // 1. Trava de segurança (Debounce/Lock)
+    if (processingLikes.current.has(storyId)) {
+      console.log(`Curtida para ${storyId} já em processamento.`);
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return; // or handle auth required
+    if (!user) return;
 
-    // Check if already liked? For now assume simple toggle or just insert
-    // Ideally we check if it exists:
-    const { data, error: checkError } = await supabase
-      .from("curtidas")
-      .select("id")
-      .eq("story_id", storyId)
-      .eq("user_id", user.id)
-      .single();
+    // Adiciona trava
+    processingLikes.current.add(storyId);
 
-    if (data) {
-      // Unlike
-      await supabase.from("curtidas").delete().eq("id", data.id);
-    } else {
-      // Like
-      await supabase
+    try {
+      // 2. Verifica se existe (Sem pedir ID)
+      const { data: existingLike, error: checkError } = await supabase
         .from("curtidas")
-        .insert([{ story_id: storyId, user_id: user.id }]);
-    }
+        .select("*", { count: "exact", head: true }) // Apenas verifica existência
+        .eq("id_relatos", storyId)
+        .eq("id_users", user.id);
 
-    fetchStories(); // Refresh to update counts
+      if (checkError) throw checkError;
+
+      // 'existingLike' será null com head:true, mas usamos 'count' ou logicamente o retorno do select se não fosse head.
+      // Correção: head:true retorna null data, mas podemos usar maybeSingle sem head se quisermos dados,
+      // ou count. Vamos usar maybeSingle() normal sem select ID para garantir.
+
+      const { data: likeData } = await supabase
+        .from("curtidas")
+        .select("*") // Seleciona tudo (ou qualquer coluna leve)
+        .eq("id_relatos", storyId)
+        .eq("id_users", user.id)
+        .maybeSingle();
+
+      if (likeData) {
+        // DELETE (Descurtir) usando Composite Key (id_users + id_relatos)
+        const { error: deleteError } = await supabase
+          .from("curtidas")
+          .delete()
+          .eq("id_relatos", storyId)
+          .eq("id_users", user.id);
+
+        if (deleteError) throw deleteError;
+      } else {
+        // INSERT (Curtir)
+        const { error: insertError } = await supabase
+          .from("curtidas")
+          .insert([{ id_relatos: storyId, id_users: user.id }]);
+
+        if (insertError) {
+          // Ignora erro 409 (Conflict) se acontecer duplicidade concorrente
+          if (insertError.code !== "23505") throw insertError;
+        }
+      }
+
+      // Atualiza UI
+      await fetchStories();
+    } catch (error) {
+      console.error("Erro ao curtir:", error);
+    } finally {
+      // Remove trava
+      processingLikes.current.delete(storyId);
+    }
   };
 
   const addComment = async (storyId, content) => {
@@ -115,11 +177,12 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to comment");
 
+    // Ajuste: 'descricao' sem acento
     const { error } = await supabase.from("comentarios").insert([
       {
-        content,
-        story_id: storyId,
-        user_id: user.id,
+        descricao: content,
+        id_relatos: storyId,
+        id_users: user.id,
       },
     ]);
 
@@ -127,27 +190,42 @@ export const StoryProvider = ({ children }) => {
     fetchStories();
   };
 
+  const deleteStory = async (storyId) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) throw new Error("Você precisa estar logado para apagar.");
+
+    const { error } = await supabase
+      .from("relatos")
+      .delete()
+      .eq("id_relatos", storyId)
+      .eq("id_users", user.id);
+
+    if (error) throw error;
+
+    // Otimista: remove da lista local imediatamente
+    setStories((prev) => prev.filter((story) => story.id !== storyId));
+  };
+
   const getRandomStory = async () => {
-    // Supabase doesn't have a direct "random" function easily exposed without RPC
-    // Simple approach: fetch count, pick random offset
     const { count } = await supabase
       .from("relatos")
       .select("*", { count: "exact", head: true });
+
+    if (!count) return null;
     const randomIndex = Math.floor(Math.random() * count);
 
+    // Ajuste: 'descricao' na query
     const { data, error } = await supabase
       .from("relatos")
       .select(
         `
         *,
-        users (name),
-        curtidas (count),
-        comentarios (
-          id,
-          content,
-          created_at,
-          user_id
-        )
+        users!relatos_id_users_fkey(id_users, nomeUser),
+        curtidas:curtidas(count),
+        comentarios(*)
       `,
       )
       .range(randomIndex, randomIndex)
@@ -156,25 +234,35 @@ export const StoryProvider = ({ children }) => {
     if (error) return null;
     return {
       ...data,
-      likes: data.curtidas[0]?.count || 0,
+      id: data.id_relatos,
+      content: data.descricao || data.descrição, // Fallback
+      category_name: data.nomeCategoria || "Geral",
+      author_name: data.users?.nomeUser || "Anônimo",
+      likes: data.curtidas?.[0]?.count || 0,
+      comentarios: data.comentarios?.map((c) => ({
+        ...c,
+        id: c.id_comentarios,
+        content: c.descricao || c.descrição,
+      })),
     };
   };
 
-  const filterByCategory = (category) => {
-    setFilters((prev) => ({ ...prev, category }));
+  const filterByCategory = (categoryName) => {
+    setFilters((prev) => ({ ...prev, category: categoryName }));
   };
 
   return (
     <StoryContext.Provider
       value={{
         stories,
+        categories,
         loading,
         addStory,
         likeStory,
         addComment,
+        deleteStory,
         getRandomStory,
         filterByCategory,
-        categories: CATEGORIES,
       }}
     >
       {children}
