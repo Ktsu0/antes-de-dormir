@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import icon1 from "../assets/icon1.png";
 import icon2 from "../assets/icon2.png";
 import icon3 from "../assets/icon3.png";
 
 const ICONS = [icon1, icon2, icon3];
 const ANIMATION_DURATION = 8000; // 8 seconds total
-const FADE_DURATION = 2000; // 2 seconds fade in/out
-const VISIBLE_DURATION = 4000; // 4 seconds fully visible
 const MAX_SIMULTANEOUS = 3; // Maximum 3 icons visible at once
 
 const MysticalBackground = memo(() => {
   const [activeIcons, setActiveIcons] = useState([]);
   const [iconCounter, setIconCounter] = useState(0);
-  const animationFrameRef = useRef();
 
   const generateRandomPosition = useCallback((existingIcons) => {
     const minDistance = 25; // Minimum distance between icons (%)
