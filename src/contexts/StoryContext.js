@@ -17,7 +17,6 @@ export const StoryProvider = ({ children }) => {
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  // Inicializa filtros do localStorage se existirem
   const [filters, setFilters] = useState(() => {
     const savedFilters = localStorage.getItem("relatos_filters");
     return savedFilters
@@ -25,7 +24,6 @@ export const StoryProvider = ({ children }) => {
       : { categories: [], showLiked: false };
   });
 
-  // Ref para travar curtidas em andamento
   const processingLikes = useRef(new Set());
 
   const fetchCategories = useCallback(() => {
@@ -38,63 +36,69 @@ export const StoryProvider = ({ children }) => {
 
   const fetchStories = useCallback(async () => {
     setLoading(true);
-
-    let query = supabase
-      .from("relatos")
-      .select(
-        `
-        *,
-        users!relatos_id_users_fkey(id_users, nomeUser),
-        curtidas:curtidas(count),
-        comentarios(*)
-      `,
-      )
-      .order("id_relatos", { ascending: false });
-
-    if (filters.categories && filters.categories.length > 0) {
-      query = query.in("nomeCategoria", filters.categories);
-    }
-
-    if (filters.showLiked) {
+    try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) {
-        // Filtra relatos onde existe uma curtida do usuário atual
-        // Usamos inner join implícito filtrando pela tabela curtidas
-        query = query
-          .not("curtidas", "is", null)
-          .filter("curtidas.id_users", "eq", user.id);
+
+      let query = supabase
+        .from("relatos")
+        .select(
+          `
+          *,
+          users!relatos_id_users_fkey(id_users, nomeUser),
+          curtidas:curtidas(count),
+          comentarios(*),
+          curtidas_detalhada:curtidas(id_users)
+        `,
+        )
+        .order("id_relatos", { ascending: false });
+
+      if (filters.categories && filters.categories.length > 0) {
+        query = query.in("nomeCategoria", filters.categories);
       }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching stories:", error);
+      } else {
+        let formattedStories = data.map((story) => {
+          const isAnon = story.is_anonymous;
+          const authorName = story.users?.nomeUser;
+          // Verifica se o usuário logado curtiu este relato específico
+          const hasUserLiked = user
+            ? story.curtidas_detalhada?.some((l) => l.id_users === user.id)
+            : false;
+
+          return {
+            ...story,
+            id: story.id_relatos,
+            content: story.descricao || story.descrição,
+            category_name: story.nomeCategoria || "Geral",
+            author_name: isAnon ? "Anônimo" : authorName || "Usuário",
+            author_id: story.id_users,
+            likes: story.curtidas?.[0]?.count || 0,
+            isLiked: hasUserLiked,
+            comentarios: story.comentarios?.map((c) => ({
+              ...c,
+              id: c.id_comentarios,
+              content: c.descricao || c.descrição,
+            })),
+          };
+        });
+
+        if (filters.showLiked && user) {
+          formattedStories = formattedStories.filter((s) => s.isLiked);
+        }
+
+        setStories(formattedStories);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching stories:", error);
-    } else {
-      const formattedStories = data.map((story) => {
-        const isAnon = story.is_anonymous;
-        const authorName = story.users?.nomeUser;
-
-        return {
-          ...story,
-          id: story.id_relatos,
-          content: story.descricao || story.descrição,
-          category_name: story.nomeCategoria || "Geral",
-          author_name: isAnon ? "Anônimo" : authorName || "Usuário",
-          author_id: story.id_users,
-          likes: story.curtidas?.[0]?.count || 0,
-          comentarios: story.comentarios?.map((c) => ({
-            ...c,
-            id: c.id_comentarios,
-            content: c.descricao || c.descrição,
-          })),
-        };
-      });
-      setStories(formattedStories);
-    }
-    setLoading(false);
   }, [filters]);
 
   useEffect(() => {
@@ -102,7 +106,6 @@ export const StoryProvider = ({ children }) => {
     fetchStories();
   }, [fetchCategories, fetchStories]);
 
-  // Salva filtros no localStorage sempre que mudarem
   useEffect(() => {
     localStorage.setItem("relatos_filters", JSON.stringify(filters));
   }, [filters]);
@@ -112,7 +115,6 @@ export const StoryProvider = ({ children }) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) throw new Error("Must be logged in to post");
 
     const { error } = await supabase.from("relatos").insert([
@@ -130,7 +132,6 @@ export const StoryProvider = ({ children }) => {
 
   const likeStory = async (storyId) => {
     if (processingLikes.current.has(storyId)) return;
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -139,40 +140,30 @@ export const StoryProvider = ({ children }) => {
     processingLikes.current.add(storyId);
 
     try {
-      const { error: checkError } = await supabase
-        .from("curtidas")
-        .select("*", { count: "exact", head: true })
-        .eq("id_relatos", storyId)
-        .eq("id_users", user.id);
-
-      if (checkError) throw checkError;
-
-      const { data: likeData } = await supabase
+      // Toggle Like
+      const { data: existingLike } = await supabase
         .from("curtidas")
         .select("*")
         .eq("id_relatos", storyId)
         .eq("id_users", user.id)
         .maybeSingle();
 
-      if (likeData) {
-        const { error: deleteError } = await supabase
+      if (existingLike) {
+        await supabase
           .from("curtidas")
           .delete()
           .eq("id_relatos", storyId)
           .eq("id_users", user.id);
-
-        if (deleteError) throw deleteError;
       } else {
-        const { error: insertError } = await supabase
+        await supabase
           .from("curtidas")
           .insert([{ id_relatos: storyId, id_users: user.id }]);
-
-        if (insertError && insertError.code !== "23505") throw insertError;
       }
 
+      // Busca apenas as histórias novamente para atualizar a UI
       await fetchStories();
     } catch (error) {
-      console.error("Erro ao curtir:", error);
+      console.error("Error liking:", error);
     } finally {
       processingLikes.current.delete(storyId);
     }
@@ -184,44 +175,27 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to comment");
 
-    // Optimistic Update: Create a temporary comment object
     const newCommentTemp = {
-      id_comentarios: Date.now(), // Temporary ID
+      id_comentarios: Date.now(),
       descricao: content,
       id_relatos: storyId,
       id_users: user.id,
       created_at: new Date().toISOString(),
-      content: content, // For UI consistency
+      content: content,
     };
 
-    // Update local state instantly
-    setStories((prevStories) =>
-      prevStories.map((story) => {
-        if (story.id === storyId) {
-          return {
-            ...story,
-            comentarios: [...(story.comentarios || []), newCommentTemp],
-          };
-        }
-        return story;
-      }),
+    setStories((prev) =>
+      prev.map((s) =>
+        s.id === storyId
+          ? { ...s, comentarios: [...(s.comentarios || []), newCommentTemp] }
+          : s,
+      ),
     );
 
-    const { error } = await supabase.from("comentarios").insert([
-      {
-        descricao: content,
-        id_relatos: storyId,
-        id_users: user.id,
-      },
-    ]);
-
-    if (error) {
-      // If error, we might want to fetch stories again to revert or show correct state
-      fetchStories();
-      throw error;
-    }
-
-    // Refresh to get real IDs and sync with database
+    const { error } = await supabase
+      .from("comentarios")
+      .insert([{ descricao: content, id_relatos: storyId, id_users: user.id }]);
+    if (error) fetchStories();
     fetchStories();
   };
 
@@ -229,67 +203,36 @@ export const StoryProvider = ({ children }) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) throw new Error("Você precisa estar logado para apagar.");
-
+    if (!user) return;
     const { error } = await supabase
       .from("relatos")
       .delete()
       .eq("id_relatos", storyId)
       .eq("id_users", user.id);
-
-    if (error) throw error;
-
-    setStories((prev) => prev.filter((story) => story.id !== storyId));
+    if (!error) setStories((prev) => prev.filter((s) => s.id !== storyId));
   };
 
   const getRandomStory = async () => {
-    const { count } = await supabase
+    // Simples para o modal de sorteio
+    const { data } = await supabase
       .from("relatos")
-      .select("*", { count: "exact", head: true });
-
-    if (!count) return null;
-    const randomIndex = Math.floor(Math.random() * count);
-
-    const { data, error } = await supabase
-      .from("relatos")
-      .select(
-        `
-        *,
-        users!relatos_id_users_fkey(id_users, nomeUser),
-        curtidas:curtidas(count),
-        comentarios(*)
-      `,
-      )
-      .range(randomIndex, randomIndex)
-      .single();
-
-    if (error) return null;
-    const isAnon = data.is_anonymous;
-    const authorName = data.users?.nomeUser;
-
+      .select("*, users(nomeUser)")
+      .limit(10);
+    if (!data) return null;
+    const story = data[Math.floor(Math.random() * data.length)];
     return {
-      ...data,
-      id: data.id_relatos,
-      content: data.descricao || data.descrição,
-      category_name: data.nomeCategoria || "Geral",
-      author_name: isAnon ? "Anônimo" : authorName || "Usuário",
-      likes: data.curtidas?.[0]?.count || 0,
-      comentarios: data.comentarios?.map((c) => ({
-        ...c,
-        id: c.id_comentarios,
-        content: c.descricao || c.descrição,
-      })),
+      ...story,
+      content: story.descricao,
+      author_name: story.is_anonymous
+        ? "Anônimo"
+        : story.users?.nomeUser || "Usuário",
     };
   };
 
-  const filterByCategories = (categoriesArray) => {
-    setFilters((prev) => ({ ...prev, categories: categoriesArray }));
-  };
-
-  const toggleLikedFilter = () => {
+  const filterByCategories = (cats) =>
+    setFilters((prev) => ({ ...prev, categories: cats }));
+  const toggleLikedFilter = () =>
     setFilters((prev) => ({ ...prev, showLiked: !prev.showLiked }));
-  };
 
   return (
     <StoryContext.Provider

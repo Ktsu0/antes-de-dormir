@@ -11,45 +11,63 @@ const Header = ({ onOpenCreate }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // Add username state
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!newUsername.trim()) return;
+    setLoading(true);
+    try {
+      const { error: profileError } = await supabase
+        .from("users")
+        .upsert({ id_users: user.id, nomeUser: newUsername });
+
+      if (profileError) throw profileError;
+
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { nomeUser: newUsername },
+      });
+
+      if (authError) throw authError;
+
+      setShowProfileEdit(false);
+      alert("Perfil atualizado com sucesso!");
+    } catch (error) {
+      alert("Erro ao atualizar: " + error.message);
+    }
+    setLoading(false);
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    console.log("Tentando autenticação...", { isLogin, email }); // DEBUG
     setLoading(true);
     try {
       if (isLogin) {
-        console.log("Chamando login...");
-        const result = await login(email, password);
-        console.log("Login sucesso:", result);
+        await login(email, password);
       } else {
-        console.log("Chamando cadastro...");
-        const result = await signUp(email, password, { nomeUser: username });
-        console.log("Cadastro sucesso:", result);
+        await signUp(email, password, { nomeUser: username });
       }
       setShowAuthModal(false);
     } catch (error) {
-      console.error("ERRO DE AUTH:", error); // DEBUG
       alert("Erro: " + error.message);
     }
     setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
-    console.log("Iniciando Google Auth...");
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin, // Força redirecionamento para a URL atual
+          redirectTo: window.location.origin,
         },
       });
       if (error) throw error;
-      console.log("Redirecionando para Google...", data);
     } catch (error) {
-      console.error("ERRO GOOGLE:", error);
       alert("Erro Google: " + error.message);
     }
   };
@@ -109,6 +127,19 @@ const Header = ({ onOpenCreate }) => {
                           </div>
 
                           <div className="p-2 space-y-1">
+                            <button
+                              onClick={() => {
+                                setNewUsername(
+                                  user.user_metadata?.nomeUser || "",
+                                );
+                                setShowProfileEdit(true);
+                                setShowProfileMenu(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
+                            >
+                              <User className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+                              Editar Perfil
+                            </button>
                             <button
                               onClick={() => {
                                 logout();
@@ -252,7 +283,7 @@ const Header = ({ onOpenCreate }) => {
                   </motion.button>
                 </form>
 
-                <div className="mt-4 pt-6  text-center">
+                <div className="mt-4 pt-6 text-center">
                   <button
                     onClick={() => setIsLogin(!isLogin)}
                     className="text-xs text-zinc-500 hover:text-indigo-400 font-bold tracking-tight transition-colors uppercase gap-2 flex items-center justify-center mx-auto"
@@ -275,6 +306,68 @@ const Header = ({ onOpenCreate }) => {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showProfileEdit && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowProfileEdit(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white/[0.03] backdrop-blur-[40px] rounded-[3rem] border border-white/10 p-10 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Editar Perfil
+              </h3>
+              <p className="text-zinc-500 text-sm mb-8">
+                Escolha como sua alma será identificada nos relatos públicos.
+              </p>
+
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-zinc-600 uppercase tracking-widest ml-1">
+                    Seu Nome Místico
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={30}
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    className="input-mystical w-full h-14"
+                    placeholder="Ex: Viajante Estelar"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileEdit(false)}
+                    className="flex-1 h-14 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 h-14 rounded-2xl btn-primary font-bold shadow-lg shadow-indigo-500/20"
+                  >
+                    {loading ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

@@ -1,4 +1,4 @@
-import React, { useState, memo } from "react";
+import React, { useState, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -19,23 +19,17 @@ const StoryCard = memo(({ story }) => {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [isLiked, setIsLiked] = useState(false);
 
   const isOwner = user && user.id === story.author_id;
+  const userName =
+    story.author_name || (story.is_anonymous ? "Anônimo" : "Usuário");
 
-  const getUserName = () => {
-    if (story.is_anonymous) return "Anônimo";
-    return story.author_name || "Usuário";
-  };
-
-  const userName = getUserName();
-
-  const handleLike = () => {
+  const handleLike = (e) => {
+    e.preventDefault();
     if (!user) {
       alert("Você precisa estar logado para curtir este relato.");
       return;
     }
-    setIsLiked(!isLiked);
     likeStory(story.id);
   };
 
@@ -96,15 +90,17 @@ const StoryCard = memo(({ story }) => {
       <div className="story-card-header">
         <div className="story-author-info">
           <div className="author-avatar-badge">
-            {story.is_anonymous ? <User className="w-6 h-6" /> : userName[0]}
+            {story.is_anonymous ? (
+              <User className="w-6 h-6 text-zinc-500" />
+            ) : (
+              <span className="text-sm font-bold">{userName[0]}</span>
+            )}
             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
             <h3 className="author-name">{userName}</h3>
             <div className="story-meta">
-              <span className="story-category-tag">
-                Categoria: {story.category_name}
-              </span>
+              <span className="story-category-tag">{story.category_name}</span>
               <span className="text-zinc-600">•</span>
               <span className="text-zinc-600 text-[10px] lowercase tracking-wide font-medium">
                 {timeAgo(story.created_at)}
@@ -129,16 +125,18 @@ const StoryCard = memo(({ story }) => {
       </div>
 
       <div className="story-content-text">
-        <p className="whitespace-pre-line">{story.content}</p>
+        <p className="whitespace-pre-line leading-relaxed">{story.content}</p>
       </div>
 
       <div className="story-actions">
         <button
           onClick={handleLike}
-          className={`action-btn like-btn ${isLiked ? "active" : ""}`}
+          className={`action-btn like-btn ${story.isLiked ? "active" : ""}`}
         >
-          <Heart className={`w-5 h-5 ${isLiked ? "fill-pink-500" : ""}`} />
-          <span>{story.likes + (isLiked ? 1 : 0)}</span>
+          <Heart
+            className={`w-5 h-5 ${story.isLiked ? "fill-pink-500 text-pink-500" : ""}`}
+          />
+          <span>{story.likes}</span>
         </button>
 
         <button
@@ -161,24 +159,25 @@ const StoryCard = memo(({ story }) => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="overflow-hidden"
           >
             <div className="comments-section">
-              <div className="space-y-5 max-h-[300px] overflow-y-auto no-scrollbar pr-2">
+              <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar pb-4">
                 {story.comentarios?.map((comment) => (
                   <div key={comment.id} className="comment-item">
-                    <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 text-[10px] border border-white/5 text-zinc-400 font-bold">
-                      {comment.id_users?.slice(0, 2).toUpperCase() || "??"}
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-[10px] border border-white/5 text-zinc-500 font-bold uppercase">
+                      {comment.id_users?.slice(0, 2) || "??"}
                     </div>
                     <div className="comment-bubble">
-                      <p className="text-zinc-300 leading-relaxed font-light">
+                      <p className="text-zinc-300 text-sm font-light">
                         {comment.content}
                       </p>
                     </div>
                   </div>
                 ))}
                 {(!story.comentarios || story.comentarios.length === 0) && (
-                  <p className="text-center text-zinc-600 text-sm py-8 italic font-light">
-                    Seja o primeiro a deixar uma mensagem de apoio.
+                  <p className="text-center text-zinc-600 text-xs py-6 font-light">
+                    Sem comentários ainda. Manifeste seu apoio!
                   </p>
                 )}
               </div>
@@ -186,29 +185,27 @@ const StoryCard = memo(({ story }) => {
               {user ? (
                 <form
                   onSubmit={handleCommentSubmit}
-                  className="flex gap-3 sticky bottom-0 bg-transparent"
+                  className="flex gap-2 pt-2 border-t border-white/5 mt-2"
                 >
                   <input
                     type="text"
-                    placeholder="Escreva algo gentil..."
+                    placeholder="Sua mensagem de luz..."
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    className="input-mystical h-12"
+                    className="input-mystical h-11 text-sm"
                   />
                   <button
                     type="submit"
                     disabled={!commentText.trim()}
-                    className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:grayscale hover:scale-105 active:scale-95"
+                    className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center transition-all disabled:opacity-30 hover:scale-105"
                   >
-                    <Send className="w-5 h-5" />
+                    <Send className="w-4 h-4" />
                   </button>
                 </form>
               ) : (
-                <div className="text-center py-5 bg-white/5 rounded-[1.5rem] border border-white/5">
-                  <p className="text-zinc-500 text-sm font-medium">
-                    Faça login para compartilhar apoio.
-                  </p>
-                </div>
+                <p className="text-center py-4 text-xs text-zinc-500 font-medium">
+                  Logue para confortar o próximo.
+                </p>
               )}
             </div>
           </motion.div>
