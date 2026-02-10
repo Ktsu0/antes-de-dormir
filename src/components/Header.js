@@ -340,13 +340,13 @@ const Header = ({ onOpenCreate }) => {
                 Editar Perfil
               </h3>
               <p className="text-zinc-500 text-sm mb-8">
-                Escolha como sua alma será identificada nos relatos públicos.
+                Escolha como será identificada nos relatos públicos.
               </p>
 
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-zinc-600 uppercase tracking-widest ml-1">
-                    Seu Nome Místico
+                    Seu Nome
                   </label>
                   <input
                     type="text"
