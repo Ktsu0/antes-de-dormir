@@ -41,12 +41,13 @@ const StoryList = () => {
   return (
     <div className="space-y-4">
       <AnimatePresence mode="popLayout">
-        {stories.map((story, index) => (
+        {stories.map((story) => (
           <motion.div
             key={story.id}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.5 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
           >
             <StoryCard story={story} />
           </motion.div>

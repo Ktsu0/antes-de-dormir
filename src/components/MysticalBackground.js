@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import icon1 from "../assets/icon1.png";
 import icon2 from "../assets/icon2.png";
 import icon3 from "../assets/icon3.png";
@@ -9,7 +9,7 @@ const FADE_DURATION = 2000; // 2 seconds fade in/out
 const VISIBLE_DURATION = 4000; // 4 seconds fully visible
 const MAX_SIMULTANEOUS = 3; // Maximum 3 icons visible at once
 
-const MysticalBackground = () => {
+const MysticalBackground = memo(() => {
   const [activeIcons, setActiveIcons] = useState([]);
   const [iconCounter, setIconCounter] = useState(0);
   const animationFrameRef = useRef();
@@ -80,45 +80,6 @@ const MysticalBackground = () => {
     setIconCounter(MAX_SIMULTANEOUS);
   }, [generateRandomPosition]);
 
-  // Smooth opacity animation loop
-  useEffect(() => {
-    const updateOpacity = () => {
-      const now = Date.now();
-
-      setActiveIcons((prevIcons) => {
-        return prevIcons.map((icon) => {
-          const age = now - icon.createdAt;
-          let newOpacity = 0;
-
-          if (age < FADE_DURATION) {
-            // Fading in
-            newOpacity = (age / FADE_DURATION) * 0.5;
-          } else if (age < FADE_DURATION + VISIBLE_DURATION) {
-            // Fully visible
-            newOpacity = 0.5;
-          } else if (age < ANIMATION_DURATION) {
-            // Fading out
-            const fadeOutProgress =
-              (age - FADE_DURATION - VISIBLE_DURATION) / FADE_DURATION;
-            newOpacity = 0.5 * (1 - fadeOutProgress);
-          }
-
-          return { ...icon, opacity: newOpacity };
-        });
-      });
-
-      animationFrameRef.current = requestAnimationFrame(updateOpacity);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateOpacity);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
   // Icon lifecycle management
   useEffect(() => {
     const interval = setInterval(() => {
@@ -140,13 +101,26 @@ const MysticalBackground = () => {
 
         return remainingIcons;
       });
-    }, ANIMATION_DURATION / MAX_SIMULTANEOUS); // Check every ~2.6 seconds
+    }, 1000); // Check every second instead of requestAnimationFrame
 
     return () => clearInterval(interval);
   }, [iconCounter, createNewIcon]);
 
   return (
     <>
+      <style>
+        {`
+          @keyframes mystical-fade {
+            0% { opacity: 0; transform: scale(0.8) rotate(0deg); }
+            25% { opacity: 0.5; transform: scale(1) rotate(5deg); }
+            75% { opacity: 0.5; transform: scale(1) rotate(-5deg); }
+            100% { opacity: 0; transform: scale(0.8) rotate(0deg); }
+          }
+          .animate-mystical-icon {
+            animation: mystical-fade ${ANIMATION_DURATION}ms ease-in-out forwards;
+          }
+        `}
+      </style>
       <div className="fixed inset-0 z-[-10] overflow-hidden bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#16213e]">
         {/* Mystical gradient orbs */}
         <div
@@ -162,16 +136,13 @@ const MysticalBackground = () => {
           style={{ animationDuration: "12s", animationDelay: "4s" }}
         />
 
-        {/* Dynamically rotating icons with smooth transitions */}
         {activeIcons.map((item) => (
           <div
             key={item.id}
-            className="absolute pointer-events-none"
+            className="absolute pointer-events-none animate-mystical-icon"
             style={{
               left: `${item.x}%`,
               top: `${item.y}%`,
-              opacity: item.opacity,
-              transition: "opacity 0.1s linear",
             }}
           >
             <img
@@ -208,6 +179,6 @@ const MysticalBackground = () => {
       </div>
     </>
   );
-};
+});
 
 export default MysticalBackground;

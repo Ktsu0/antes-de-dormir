@@ -17,14 +17,13 @@ export const StoryProvider = ({ children }) => {
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ category: null });
+  const [filters, setFilters] = useState({ categories: [] });
 
-  // Ref para travar curtidas em andamento (evita re-render desnecessário)
+  // Ref para travar curtidas em andamento
   const processingLikes = useRef(new Set());
 
-  // Load categories from local mock file (Static & Fast)
   const fetchCategories = useCallback(() => {
-    const formattedCategories = CATEGORIES.map((cat, index) => ({
+    const formattedCategories = CATEGORIES.map((cat) => ({
       id: cat,
       name: cat,
     }));
@@ -34,7 +33,6 @@ export const StoryProvider = ({ children }) => {
   const fetchStories = useCallback(async () => {
     setLoading(true);
 
-    // Query ajustada: 'descricao' sem acento
     let query = supabase
       .from("relatos")
       .select(
@@ -47,9 +45,8 @@ export const StoryProvider = ({ children }) => {
       )
       .order("id_relatos", { ascending: false });
 
-    // Filter by text column directly
-    if (filters.category) {
-      query = query.eq("nomeCategoria", filters.category);
+    if (filters.categories && filters.categories.length > 0) {
+      query = query.in("nomeCategoria", filters.categories);
     }
 
     const { data, error } = await query;
@@ -60,7 +57,6 @@ export const StoryProvider = ({ children }) => {
       const formattedStories = data.map((story) => ({
         ...story,
         id: story.id_relatos,
-        // Usando 'descricao' sem acento do banco, fallback para 'descrição' se ainda existir antigo
         content: story.descricao || story.descrição,
         category_name: story.nomeCategoria || "Geral",
         author_name: story.users?.nomeUser || "Anônimo",
@@ -69,7 +65,7 @@ export const StoryProvider = ({ children }) => {
         comentarios: story.comentarios?.map((c) => ({
           ...c,
           id: c.id_comentarios,
-          content: c.descricao || c.descrição, // Ajuste aqui também
+          content: c.descricao || c.descrição,
         })),
       }));
       setStories(formattedStories);
@@ -90,7 +86,6 @@ export const StoryProvider = ({ children }) => {
 
     if (!user) throw new Error("Must be logged in to post");
 
-    // Ajuste: 'descricao' sem acento
     const { error } = await supabase.from("relatos").insert([
       {
         descricao: content,
@@ -105,43 +100,32 @@ export const StoryProvider = ({ children }) => {
   };
 
   const likeStory = async (storyId) => {
-    // 1. Trava de segurança (Debounce/Lock)
-    if (processingLikes.current.has(storyId)) {
-      console.log(`Curtida para ${storyId} já em processamento.`);
-      return;
-    }
+    if (processingLikes.current.has(storyId)) return;
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Adiciona trava
     processingLikes.current.add(storyId);
 
     try {
-      // 2. Verifica se existe (Sem pedir ID)
       const { error: checkError } = await supabase
         .from("curtidas")
-        .select("*", { count: "exact", head: true }) // Apenas verifica existência
+        .select("*", { count: "exact", head: true })
         .eq("id_relatos", storyId)
         .eq("id_users", user.id);
 
       if (checkError) throw checkError;
 
-      // 'existingLike' será null com head:true, mas usamos 'count' ou logicamente o retorno do select se não fosse head.
-      // Correção: head:true retorna null data, mas podemos usar maybeSingle sem head se quisermos dados,
-      // ou count. Vamos usar maybeSingle() normal sem select ID para garantir.
-
       const { data: likeData } = await supabase
         .from("curtidas")
-        .select("*") // Seleciona tudo (ou qualquer coluna leve)
+        .select("*")
         .eq("id_relatos", storyId)
         .eq("id_users", user.id)
         .maybeSingle();
 
       if (likeData) {
-        // DELETE (Descurtir) usando Composite Key (id_users + id_relatos)
         const { error: deleteError } = await supabase
           .from("curtidas")
           .delete()
@@ -150,23 +134,17 @@ export const StoryProvider = ({ children }) => {
 
         if (deleteError) throw deleteError;
       } else {
-        // INSERT (Curtir)
         const { error: insertError } = await supabase
           .from("curtidas")
           .insert([{ id_relatos: storyId, id_users: user.id }]);
 
-        if (insertError) {
-          // Ignora erro 409 (Conflict) se acontecer duplicidade concorrente
-          if (insertError.code !== "23505") throw insertError;
-        }
+        if (insertError && insertError.code !== "23505") throw insertError;
       }
 
-      // Atualiza UI
       await fetchStories();
     } catch (error) {
       console.error("Erro ao curtir:", error);
     } finally {
-      // Remove trava
       processingLikes.current.delete(storyId);
     }
   };
@@ -177,7 +155,6 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to comment");
 
-    // Ajuste: 'descricao' sem acento
     const { error } = await supabase.from("comentarios").insert([
       {
         descricao: content,
@@ -205,7 +182,6 @@ export const StoryProvider = ({ children }) => {
 
     if (error) throw error;
 
-    // Otimista: remove da lista local imediatamente
     setStories((prev) => prev.filter((story) => story.id !== storyId));
   };
 
@@ -217,7 +193,6 @@ export const StoryProvider = ({ children }) => {
     if (!count) return null;
     const randomIndex = Math.floor(Math.random() * count);
 
-    // Ajuste: 'descricao' na query
     const { data, error } = await supabase
       .from("relatos")
       .select(
@@ -235,7 +210,7 @@ export const StoryProvider = ({ children }) => {
     return {
       ...data,
       id: data.id_relatos,
-      content: data.descricao || data.descrição, // Fallback
+      content: data.descricao || data.descrição,
       category_name: data.nomeCategoria || "Geral",
       author_name: data.users?.nomeUser || "Anônimo",
       likes: data.curtidas?.[0]?.count || 0,
@@ -247,8 +222,8 @@ export const StoryProvider = ({ children }) => {
     };
   };
 
-  const filterByCategory = (categoryName) => {
-    setFilters((prev) => ({ ...prev, category: categoryName }));
+  const filterByCategories = (categoriesArray) => {
+    setFilters({ categories: categoriesArray });
   };
 
   return (
@@ -262,7 +237,8 @@ export const StoryProvider = ({ children }) => {
         addComment,
         deleteStory,
         getRandomStory,
-        filterByCategory,
+        filterByCategories,
+        filters,
       }}
     >
       {children}

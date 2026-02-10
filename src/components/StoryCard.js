@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -14,7 +14,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const StoryCard = ({ story }) => {
+const StoryCard = memo(({ story }) => {
   const { likeStory, addComment, deleteStory } = useStories();
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
@@ -31,6 +31,10 @@ const StoryCard = ({ story }) => {
   const userName = getUserName();
 
   const handleLike = () => {
+    if (!user) {
+      alert("Você precisa estar logado para curtir este relato.");
+      return;
+    }
     setIsLiked(!isLiked);
     likeStory(story.id);
   };
@@ -58,6 +62,7 @@ const StoryCard = ({ story }) => {
 
   const timeAgo = (dateStr) => {
     try {
+      if (!dateStr) return "Agora";
       return formatDistanceToNow(new Date(dateStr), {
         addSuffix: true,
         locale: ptBR,
@@ -68,13 +73,7 @@ const StoryCard = ({ story }) => {
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      className="story-card group"
-    >
+    <div className="story-card group">
       <div className="story-card-header">
         <div className="story-author-info">
           <div className="author-avatar-badge">
@@ -111,8 +110,7 @@ const StoryCard = ({ story }) => {
       </div>
 
       <div className="story-content-text">
-        <p className="whitespace-pre-line">{story.content}</p>{" "}
-        {/* Use normalized content */}
+        <p className="whitespace-pre-line">{story.content}</p>
       </div>
 
       <div className="story-actions">
@@ -120,12 +118,7 @@ const StoryCard = ({ story }) => {
           onClick={handleLike}
           className={`action-btn like-btn ${isLiked ? "active" : ""}`}
         >
-          <motion.div
-            whileTap={{ scale: 1.4 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <Heart className={`w-5 h-5 ${isLiked ? "fill-pink-500" : ""}`} />
-          </motion.div>
+          <Heart className={`w-5 h-5 ${isLiked ? "fill-pink-500" : ""}`} />
           <span>{story.likes + (isLiked ? 1 : 0)}</span>
         </button>
 
@@ -148,17 +141,12 @@ const StoryCard = ({ story }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3 }}
           >
             <div className="comments-section">
               <div className="space-y-5 max-h-[300px] overflow-y-auto no-scrollbar pr-2">
                 {story.comentarios?.map((comment) => (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    key={comment.id}
-                    className="comment-item"
-                  >
+                  <div key={comment.id} className="comment-item">
                     <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 text-[10px] border border-white/5 text-zinc-400 font-bold">
                       {comment.id_users?.slice(0, 2).toUpperCase() || "??"}
                     </div>
@@ -167,7 +155,7 @@ const StoryCard = ({ story }) => {
                         {comment.content}
                       </p>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
                 {(!story.comentarios || story.comentarios.length === 0) && (
                   <p className="text-center text-zinc-600 text-sm py-8 italic font-light">
@@ -207,8 +195,8 @@ const StoryCard = ({ story }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
-};
+});
 
 export default StoryCard;

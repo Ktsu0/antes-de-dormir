@@ -55,52 +55,71 @@ const FloatingRandomButton = ({ className, style }) => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-2xl bg-gradient-to-br from-purple-900/95 via-indigo-900/95 to-slate-900/95 backdrop-blur-xl rounded-3xl border border-purple-500/30 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-2xl bg-white/[0.03] backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden"
             >
-              {/* Decorative glows */}
-              <div className="absolute -top-20 -right-20 w-60 h-60 bg-purple-500/20 rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl" />
+              {/* Mystical glow accents */}
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/15 rounded-full blur-[100px]" />
+              <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/15 rounded-full blur-[100px]" />
 
               {/* Close button */}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all group cursor-pointer"
+                className="absolute top-8 right-8 z-50 w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all group backdrop-blur-xl"
               >
-                <X className="w-5 h-5 text-white group-hover:rotate-90 transition-transform" />
+                <X className="w-5 h-5 text-zinc-400 group-hover:text-white transition-all" />
               </button>
 
-              {/* Content */}
-              <div className="relative z-10 p-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <Sparkles className="w-6 h-6 text-purple-300" />
-                  <h2 className="text-2xl font-bold text-white uppercase tracking-wide">
-                    Relato Aleatório
-                  </h2>
+              {/* Content Container */}
+              <div className="relative z-10 p-12">
+                <div className="flex items-center gap-4 mb-12">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                    <Sparkles className="w-6 h-6 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.4em] mb-0.5">
+                      Sorteio Estelar
+                    </h2>
+                    <p className="text-xl font-bold text-white tracking-tight">
+                      Relato Aleatório
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mb-6">
-                  <span className="inline-block category-pill category-pill-active mb-4">
+                <div className="mb-10">
+                  <div className="inline-flex items-center px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                     {randomStory.category_name}
-                  </span>
+                  </div>
                 </div>
 
-                <p className="text-xl text-white/90 leading-relaxed mb-8 font-light">
-                  {randomStory.content}
-                </p>
-
-                <div className="flex items-center justify-between pt-6 border-t border-white/10">
-                  <p className="text-sm text-zinc-400">
-                    Por:{" "}
-                    <span className="text-purple-300 font-semibold">
-                      {randomStory.author_name}
-                    </span>
+                {/* Bubble-style content (Matching comment-bubble theme) */}
+                <div className="mb-12 p-8 rounded-[2rem] bg-white/5 border border-white/5 relative group/content shadow-inner">
+                  <p className="text-2xl text-zinc-100 leading-relaxed font-light italic">
+                    "{randomStory.content}"
                   </p>
+                  <div className="absolute -left-2 top-8 w-1 h-12 bg-indigo-500/50 rounded-full blur-[2px]" />
+                </div>
+
+                <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-800/80 border border-white/5 flex items-center justify-center text-sm font-bold text-zinc-300">
+                      {randomStory.author_name?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-0.5">
+                        Autor
+                      </p>
+                      <p className="text-base text-zinc-200 font-medium italic">
+                        {randomStory.author_name}
+                      </p>
+                    </div>
+                  </div>
+
                   <button
                     onClick={handleRandomStory}
-                    className="btn-glass group"
+                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/25 active:scale-95"
                   >
-                    <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                    Outro Relato
+                    <Sparkles className="w-4 h-4" />
+                    <span>Outro Relato</span>
                   </button>
                 </div>
               </div>

@@ -26,7 +26,7 @@ const Header = ({ onOpenCreate }) => {
         console.log("Login sucesso:", result);
       } else {
         console.log("Chamando cadastro...");
-        const result = await signUp(email, password, { nomeUsuario: username });
+        const result = await signUp(email, password, { nomeUser: username });
         console.log("Cadastro sucesso:", result);
       }
       setShowAuthModal(false);

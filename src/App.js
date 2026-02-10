@@ -18,7 +18,7 @@ function App() {
           <div className="pb-20">
             <Header onOpenCreate={() => setIsModalOpen(true)} />
 
-            <div className="max-w-[1920px] mx-auto px-6 lg:px-12 pt-32 grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="max-w-[1920px] mx-auto px-6 lg:px-12 pt-40 grid grid-cols-1 lg:grid-cols-12 gap-10">
               {/* Sidebar Left: Filters */}
               <aside className="hidden lg:block col-span-3 sticky top-28 h-fit space-y-8">
                 <CategoryFilter />

@@ -3,7 +3,9 @@ import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }) => {
       password,
       options: {
         data: metadata,
+        emailRedirectTo: window.location.origin,
       },
     });
     if (error) throw error;
