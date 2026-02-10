@@ -72,6 +72,25 @@ const StoryCard = memo(({ story }) => {
     }
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: "Antes de Dormir - Um relato profundo",
+      text: `Confira este relato: "${story.content.substring(0, 100)}..."`,
+      url: window.location.origin + "?story=" + story.id,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("Link copiado para a área de transferência!");
+      }
+    } catch (err) {
+      console.error("Erro ao compartilhar:", err);
+    }
+  };
+
   return (
     <div className="story-card group">
       <div className="story-card-header">
@@ -130,7 +149,7 @@ const StoryCard = memo(({ story }) => {
           <span>{story.comentarios?.length || 0}</span>
         </button>
 
-        <button className="action-btn share-btn">
+        <button onClick={handleShare} className="action-btn share-btn">
           <Share2 className="w-5 h-5" />
         </button>
       </div>

@@ -17,7 +17,13 @@ export const StoryProvider = ({ children }) => {
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ categories: [] });
+  // Inicializa filtros do localStorage se existirem
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = localStorage.getItem("relatos_filters");
+    return savedFilters
+      ? JSON.parse(savedFilters)
+      : { categories: [], showLiked: false };
+  });
 
   // Ref para travar curtidas em andamento
   const processingLikes = useRef(new Set());
@@ -49,25 +55,43 @@ export const StoryProvider = ({ children }) => {
       query = query.in("nomeCategoria", filters.categories);
     }
 
+    if (filters.showLiked) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        // Filtra relatos onde existe uma curtida do usuário atual
+        // Usamos inner join implícito filtrando pela tabela curtidas
+        query = query
+          .not("curtidas", "is", null)
+          .filter("curtidas.id_users", "eq", user.id);
+      }
+    }
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching stories:", error);
     } else {
-      const formattedStories = data.map((story) => ({
-        ...story,
-        id: story.id_relatos,
-        content: story.descricao || story.descrição,
-        category_name: story.nomeCategoria || "Geral",
-        author_name: story.users?.nomeUser || "Anônimo",
-        author_id: story.id_users,
-        likes: story.curtidas?.[0]?.count || 0,
-        comentarios: story.comentarios?.map((c) => ({
-          ...c,
-          id: c.id_comentarios,
-          content: c.descricao || c.descrição,
-        })),
-      }));
+      const formattedStories = data.map((story) => {
+        const isAnon = story.is_anonymous;
+        const authorName = story.users?.nomeUser;
+
+        return {
+          ...story,
+          id: story.id_relatos,
+          content: story.descricao || story.descrição,
+          category_name: story.nomeCategoria || "Geral",
+          author_name: isAnon ? "Anônimo" : authorName || "Usuário",
+          author_id: story.id_users,
+          likes: story.curtidas?.[0]?.count || 0,
+          comentarios: story.comentarios?.map((c) => ({
+            ...c,
+            id: c.id_comentarios,
+            content: c.descricao || c.descrição,
+          })),
+        };
+      });
       setStories(formattedStories);
     }
     setLoading(false);
@@ -77,6 +101,11 @@ export const StoryProvider = ({ children }) => {
     fetchCategories();
     fetchStories();
   }, [fetchCategories, fetchStories]);
+
+  // Salva filtros no localStorage sempre que mudarem
+  useEffect(() => {
+    localStorage.setItem("relatos_filters", JSON.stringify(filters));
+  }, [filters]);
 
   const addStory = async (storyData) => {
     const { content, categoryName, is_anonymous } = storyData;
@@ -155,6 +184,29 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to comment");
 
+    // Optimistic Update: Create a temporary comment object
+    const newCommentTemp = {
+      id_comentarios: Date.now(), // Temporary ID
+      descricao: content,
+      id_relatos: storyId,
+      id_users: user.id,
+      created_at: new Date().toISOString(),
+      content: content, // For UI consistency
+    };
+
+    // Update local state instantly
+    setStories((prevStories) =>
+      prevStories.map((story) => {
+        if (story.id === storyId) {
+          return {
+            ...story,
+            comentarios: [...(story.comentarios || []), newCommentTemp],
+          };
+        }
+        return story;
+      }),
+    );
+
     const { error } = await supabase.from("comentarios").insert([
       {
         descricao: content,
@@ -163,7 +215,13 @@ export const StoryProvider = ({ children }) => {
       },
     ]);
 
-    if (error) throw error;
+    if (error) {
+      // If error, we might want to fetch stories again to revert or show correct state
+      fetchStories();
+      throw error;
+    }
+
+    // Refresh to get real IDs and sync with database
     fetchStories();
   };
 
@@ -207,12 +265,15 @@ export const StoryProvider = ({ children }) => {
       .single();
 
     if (error) return null;
+    const isAnon = data.is_anonymous;
+    const authorName = data.users?.nomeUser;
+
     return {
       ...data,
       id: data.id_relatos,
       content: data.descricao || data.descrição,
       category_name: data.nomeCategoria || "Geral",
-      author_name: data.users?.nomeUser || "Anônimo",
+      author_name: isAnon ? "Anônimo" : authorName || "Usuário",
       likes: data.curtidas?.[0]?.count || 0,
       comentarios: data.comentarios?.map((c) => ({
         ...c,
@@ -223,7 +284,11 @@ export const StoryProvider = ({ children }) => {
   };
 
   const filterByCategories = (categoriesArray) => {
-    setFilters({ categories: categoriesArray });
+    setFilters((prev) => ({ ...prev, categories: categoriesArray }));
+  };
+
+  const toggleLikedFilter = () => {
+    setFilters((prev) => ({ ...prev, showLiked: !prev.showLiked }));
   };
 
   return (
@@ -238,6 +303,7 @@ export const StoryProvider = ({ children }) => {
         deleteStory,
         getRandomStory,
         filterByCategories,
+        toggleLikedFilter,
         filters,
       }}
     >

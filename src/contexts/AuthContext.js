@@ -14,7 +14,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      // Se temos um usuário mas ele não está na nossa tabela 'users', tentamos cadastrar
+      if (currentUser) {
+        ensureProfileExists(currentUser);
+      }
+
       setLoading(false);
     });
 
@@ -22,12 +29,39 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        ensureProfileExists(currentUser);
+      }
+
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Função auxiliar para garantir que o usuário tenha um perfil na tabela pública
+  const ensureProfileExists = async (user) => {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id_users")
+      .eq("id_users", user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      await supabase.from("users").insert([
+        {
+          id_users: user.id,
+          nomeUser:
+            user.user_metadata?.nomeUser ||
+            user.user_metadata?.full_name ||
+            user.email.split("@")[0],
+        },
+      ]);
+    }
+  };
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -47,7 +81,13 @@ export const AuthProvider = ({ children }) => {
         emailRedirectTo: window.location.origin,
       },
     });
+
     if (error) throw error;
+
+    if (data?.user) {
+      await ensureProfileExists(data.user);
+    }
+
     return data;
   };
 
