@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, PenTool, Globe, Lock, Check } from "lucide-react";
+import { X, PenTool, Globe, Lock } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { CATEGORIES } from "../data/mockStories";
 

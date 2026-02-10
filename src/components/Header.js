@@ -4,7 +4,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { User, LogOut } from "lucide-react";
 import Logo from "./Logo";
 import { supabase } from "../lib/supabase";
-import CategoryFilter from "./CategoryFilter";
 
 const Header = ({ onOpenCreate }) => {
   const { user, login, logout, signUp } = useAuth();

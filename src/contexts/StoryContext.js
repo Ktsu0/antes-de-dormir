@@ -121,7 +121,7 @@ export const StoryProvider = ({ children }) => {
 
     try {
       // 2. Verifica se existe (Sem pedir ID)
-      const { data: existingLike, error: checkError } = await supabase
+      const { error: checkError } = await supabase
         .from("curtidas")
         .select("*", { count: "exact", head: true }) // Apenas verifica existência
         .eq("id_relatos", storyId)

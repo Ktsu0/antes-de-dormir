@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useStories } from "../contexts/StoryContext";
 import { Sparkles } from "lucide-react";
 
 const CategoryFilter = () => {
   const { categories, filterByCategory } = useStories();
-  const [isOpen, setIsOpen] = useState(false);
   const [active, setActive] = useState(null);
 
   const handleFilter = (cat) => {
@@ -16,7 +14,6 @@ const CategoryFilter = () => {
       setActive(cat);
       filterByCategory(cat);
     }
-    setIsOpen(false);
   };
 
   return (

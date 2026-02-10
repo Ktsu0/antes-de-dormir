@@ -87,6 +87,10 @@ const StoryCard = ({ story }) => {
               <span className="story-category-tag">
                 Categoria: {story.category_name}
               </span>
+              <span className="text-zinc-600">•</span>
+              <span className="text-zinc-600 text-[10px] lowercase tracking-wide font-medium">
+                {timeAgo(story.created_at)}
+              </span>
             </div>
           </div>
         </div>

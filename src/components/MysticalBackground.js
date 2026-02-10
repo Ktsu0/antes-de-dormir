@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import icon1 from "../assets/icon1.png";
 import icon2 from "../assets/icon2.png";
 import icon3 from "../assets/icon3.png";
@@ -14,44 +14,49 @@ const MysticalBackground = () => {
   const [iconCounter, setIconCounter] = useState(0);
   const animationFrameRef = useRef();
 
-  const generateRandomPosition = (existingIcons) => {
+  const generateRandomPosition = useCallback((existingIcons) => {
     const minDistance = 25; // Minimum distance between icons (%)
     let attempts = 0;
-    let x, y;
 
     while (attempts < 50) {
-      x = 10 + Math.random() * 80; // 10-90%
-      y = 15 + Math.random() * 75; // 15-90% (avoid header area)
+      const x = 10 + Math.random() * 80; // 10-90%
+      const y = 15 + Math.random() * 75; // 15-90% (avoid header area)
 
       const validPosition = existingIcons.every((icon) => {
-        const distance = Math.sqrt(
-          Math.pow(x - icon.x, 2) + Math.pow(y - icon.y, 2),
-        );
+        const dx = x - icon.x;
+        const dy = y - icon.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         return distance >= minDistance;
       });
 
-      if (validPosition) break;
+      if (validPosition) return { x, y };
       attempts++;
     }
 
-    return { x, y };
-  };
-
-  const createNewIcon = (counter) => {
-    const { x, y } = generateRandomPosition(activeIcons);
-    const size = 30 + Math.random() * 30; // 30-60px
-    const iconSrc = ICONS[Math.floor(Math.random() * ICONS.length)];
-
     return {
-      id: counter,
-      x,
-      y,
-      size,
-      icon: iconSrc,
-      createdAt: Date.now(),
-      opacity: 0,
+      x: 10 + Math.random() * 80,
+      y: 15 + Math.random() * 75,
     };
-  };
+  }, []);
+
+  const createNewIcon = useCallback(
+    (counter) => {
+      const { x, y } = generateRandomPosition(activeIcons);
+      const size = 30 + Math.random() * 30; // 30-60px
+      const iconSrc = ICONS[Math.floor(Math.random() * ICONS.length)];
+
+      return {
+        id: counter,
+        x,
+        y,
+        size,
+        icon: iconSrc,
+        createdAt: Date.now(),
+        opacity: 0,
+      };
+    },
+    [activeIcons, generateRandomPosition],
+  );
 
   useEffect(() => {
     // Initialize with 3 icons
@@ -73,7 +78,7 @@ const MysticalBackground = () => {
     }
     setActiveIcons(initialIcons);
     setIconCounter(MAX_SIMULTANEOUS);
-  }, []);
+  }, [generateRandomPosition]);
 
   // Smooth opacity animation loop
   useEffect(() => {
@@ -138,7 +143,7 @@ const MysticalBackground = () => {
     }, ANIMATION_DURATION / MAX_SIMULTANEOUS); // Check every ~2.6 seconds
 
     return () => clearInterval(interval);
-  }, [iconCounter]);
+  }, [iconCounter, createNewIcon]);
 
   return (
     <>
