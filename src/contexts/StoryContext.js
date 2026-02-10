@@ -66,7 +66,6 @@ export const StoryProvider = ({ children }) => {
         let formattedStories = data.map((story) => {
           const isAnon = story.is_anonymous;
           const authorName = story.users?.nomeUser;
-          // Verifica se o usuário logado curtiu este relato específico
           const hasUserLiked = user
             ? story.curtidas_detalhada?.some((l) => l.id_users === user.id)
             : false;
@@ -101,6 +100,46 @@ export const StoryProvider = ({ children }) => {
     }
   }, [filters]);
 
+  // SET UP REAL-TIME SUBSCRIPTION
+  useEffect(() => {
+    // Escuta mudanças nos relatos (likes novos, relatos novos)
+    const storiesSubscription = supabase
+      .channel("realtime_stories")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "relatos" },
+        () => {
+          fetchStories();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "curtidas" },
+        () => {
+          fetchStories();
+        },
+      )
+      .subscribe();
+
+    // Escuta mudanças nos comentários específicamente
+    const commentsSubscription = supabase
+      .channel("realtime_comments")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "comentarios" },
+        () => {
+          // Quando um comentário entra, atualizamos tudo para refletir na tela
+          fetchStories();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(storiesSubscription);
+      supabase.removeChannel(commentsSubscription);
+    };
+  }, [fetchStories]);
+
   useEffect(() => {
     fetchCategories();
     fetchStories();
@@ -127,7 +166,7 @@ export const StoryProvider = ({ children }) => {
     ]);
 
     if (error) throw error;
-    fetchStories();
+    // Realtime will handle fetch
   };
 
   const likeStory = async (storyId) => {
@@ -140,7 +179,6 @@ export const StoryProvider = ({ children }) => {
     processingLikes.current.add(storyId);
 
     try {
-      // Toggle Like
       const { data: existingLike } = await supabase
         .from("curtidas")
         .select("*")
@@ -159,9 +197,6 @@ export const StoryProvider = ({ children }) => {
           .from("curtidas")
           .insert([{ id_relatos: storyId, id_users: user.id }]);
       }
-
-      // Busca apenas as histórias novamente para atualizar a UI
-      await fetchStories();
     } catch (error) {
       console.error("Error liking:", error);
     } finally {
@@ -175,6 +210,7 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to comment");
 
+    // Optimistic Update
     const newCommentTemp = {
       id_comentarios: Date.now(),
       descricao: content,
@@ -196,7 +232,6 @@ export const StoryProvider = ({ children }) => {
       .from("comentarios")
       .insert([{ descricao: content, id_relatos: storyId, id_users: user.id }]);
     if (error) fetchStories();
-    fetchStories();
   };
 
   const deleteStory = async (storyId) => {
@@ -204,16 +239,14 @@ export const StoryProvider = ({ children }) => {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase
+    await supabase
       .from("relatos")
       .delete()
       .eq("id_relatos", storyId)
       .eq("id_users", user.id);
-    if (!error) setStories((prev) => prev.filter((s) => s.id !== storyId));
   };
 
   const getRandomStory = async () => {
-    // Simples para o modal de sorteio
     const { data } = await supabase
       .from("relatos")
       .select("*, users(nomeUser)")

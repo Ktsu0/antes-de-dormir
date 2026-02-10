@@ -53,7 +53,15 @@ const Header = ({ onOpenCreate }) => {
       }
       setShowAuthModal(false);
     } catch (error) {
-      alert("Erro: " + error.message);
+      if (error.message.includes("rate limit")) {
+        alert(
+          "Ops! Muitas tentativas em pouco tempo. Por segurança, aguarde alguns minutos antes de tentar novamente ou use o login social.",
+        );
+      } else if (error.message.includes("Invalid login credentials")) {
+        alert("E-mail ou senha incorretos. Verifique seus dados.");
+      } else {
+        alert("Erro: " + error.message);
+      }
     }
     setLoading(false);
   };
