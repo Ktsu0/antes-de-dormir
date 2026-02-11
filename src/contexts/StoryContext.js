@@ -24,6 +24,11 @@ export const StoryProvider = ({ children }) => {
       : { categories: [], showLiked: false };
   });
 
+  const [randomStoryModal, setRandomStoryModal] = useState({
+    isOpen: false,
+    story: null,
+  });
+
   const processingLikes = useRef(new Set());
 
   const fetchCategories = useCallback(() => {
@@ -247,23 +252,45 @@ export const StoryProvider = ({ children }) => {
   };
 
   const getRandomStory = async () => {
-    const { data } = await supabase
-      .from("relatos")
-      .select("*, users(nomeUser)")
-      .limit(10);
-    if (!data) return null;
-    const story = data[Math.floor(Math.random() * data.length)];
-    return {
-      ...story,
-      content: story.descricao,
-      author_name: story.is_anonymous
-        ? "Anônimo"
-        : story.users?.nomeUser || "Usuário",
-    };
+    try {
+      const { data, error } = await supabase
+        .from("relatos")
+        .select("*, users!relatos_id_users_fkey(nomeUser)")
+        .limit(20);
+
+      if (error || !data || data.length === 0) return null;
+
+      const rawStory = data[Math.floor(Math.random() * data.length)];
+
+      return {
+        ...rawStory,
+        id: rawStory.id_relatos,
+        content: rawStory.descricao || rawStory.descrição,
+        category_name: rawStory.nomeCategoria || "Geral",
+        author_name: rawStory.is_anonymous
+          ? "Anônimo"
+          : rawStory.users?.nomeUser || "Usuário",
+      };
+    } catch (err) {
+      console.error("Random story error:", err);
+      return null;
+    }
+  };
+
+  const openRandomStory = async () => {
+    const story = await getRandomStory();
+    if (story) {
+      setRandomStoryModal({ isOpen: true, story });
+    }
+  };
+
+  const closeRandomStory = () => {
+    setRandomStoryModal({ isOpen: false, story: null });
   };
 
   const filterByCategories = (cats) =>
     setFilters((prev) => ({ ...prev, categories: cats }));
+
   const toggleLikedFilter = () =>
     setFilters((prev) => ({ ...prev, showLiked: !prev.showLiked }));
 
@@ -278,6 +305,9 @@ export const StoryProvider = ({ children }) => {
         addComment,
         deleteStory,
         getRandomStory,
+        openRandomStory,
+        closeRandomStory,
+        randomStoryModal,
         filterByCategories,
         toggleLikedFilter,
         filters,

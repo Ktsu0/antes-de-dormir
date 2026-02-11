@@ -116,7 +116,10 @@ body {
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
   transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   min-height: 250px;
-  padding: 2.5rem;
+  padding: 6vw;
+  @screen lg {
+    padding: 2.5rem;
+  }
 
   &:hover {
     background: rgba(30, 41, 59, 0.6);
@@ -129,7 +132,7 @@ body {
 }
 
 .btn-primary {
-  @apply px-8 py-4 rounded-full font-bold uppercase tracking-wider text-sm transition-all duration-500 flex items-center justify-center gap-3 relative overflow-hidden;
+  @apply px-[6vw] lg:px-8 py-[2vh] lg:py-4 rounded-full font-bold uppercase tracking-wider text-[3.2vw] md:text-xs lg:text-sm transition-all duration-500 flex items-center justify-center gap-3 relative overflow-hidden;
   background: linear-gradient(to right, #9333ea, #6366f1, #9333ea);
   background-size: 200% auto;
   color: white;

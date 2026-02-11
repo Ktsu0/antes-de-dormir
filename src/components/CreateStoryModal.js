@@ -70,12 +70,20 @@ const CreateStoryModal = ({ onClose }) => {
 
           <form onSubmit={handleSubmit} className="space-y-10">
             <div className="space-y-4">
-              <label className="text-xs font-bold text-zinc-600 uppercase tracking-[0.2em] ml-2">
-                Conte sua história
-              </label>
+              <div className="flex justify-between items-center px-2">
+                <label className="text-xs font-bold text-zinc-600 uppercase tracking-[0.2em]">
+                  Conte sua história
+                </label>
+                <span
+                  className={`text-[10px] font-bold tracking-widest ${content.length > 2400 ? "text-red-500" : "text-zinc-500"}`}
+                >
+                  {content.length} / 2500
+                </span>
+              </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                maxLength={2500}
                 className="input-mystical min-h-[280px] text-lg leading-relaxed pt-6 no-scrollbar"
                 placeholder="Hoje eu percebi que..."
                 required

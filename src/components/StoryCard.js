@@ -19,6 +19,12 @@ const StoryCard = memo(({ story }) => {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+  const shouldTruncate = story.content.length > 450;
+  const displayContent =
+    shouldTruncate && !isExpanded
+      ? story.content.substring(0, 450) + "..."
+      : story.content;
 
   const isOwner = user && user.id === story.author_id;
   const userName =
@@ -125,7 +131,19 @@ const StoryCard = memo(({ story }) => {
       </div>
 
       <div className="story-content-text">
-        <p className="whitespace-pre-line leading-relaxed">{story.content}</p>
+        <p className="whitespace-pre-line leading-relaxed text-zinc-300">
+          {displayContent}
+        </p>
+
+        {shouldTruncate && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 group/more"
+          >
+            <span className="w-4 h-px bg-indigo-500/30 group-hover/more:w-8 transition-all" />
+            {isExpanded ? "Recolher Relato" : "Ler Relato Completo"}
+          </button>
+        )}
       </div>
 
       <div className="story-actions">
@@ -185,21 +203,30 @@ const StoryCard = memo(({ story }) => {
               {user ? (
                 <form
                   onSubmit={handleCommentSubmit}
-                  className="flex gap-2 pt-2 border-t border-white/5 mt-2"
+                  className="flex flex-col gap-2 pt-2 border-t border-white/5 mt-2"
                 >
-                  <input
-                    type="text"
-                    placeholder="Sua mensagem de luz..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    className="input-mystical h-11 text-sm"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Sua mensagem de luz..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      maxLength={600}
+                      className="input-mystical h-11 text-sm pr-16"
+                    />
+                    <span
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold ${commentText.length > 550 ? "text-pink-500" : "text-zinc-600"}`}
+                    >
+                      {commentText.length}/600
+                    </span>
+                  </div>
                   <button
                     type="submit"
                     disabled={!commentText.trim()}
-                    className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center transition-all disabled:opacity-30 hover:scale-105"
+                    className="w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center gap-2 transition-all disabled:opacity-30 hover:scale-[1.01] active:scale-[0.99] font-bold text-xs uppercase tracking-widest"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
+                    Enviar Apoio
                   </button>
                 </form>
               ) : (

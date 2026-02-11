@@ -1,6 +1,8 @@
 .category-filter-trigger {
-  @apply flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all duration-500 font-medium tracking-tight;
+  @apply flex items-center gap-2 px-[5vw] lg:px-6 py-[1.5vh] lg:py-2.5 rounded-full border transition-all duration-500 font-medium tracking-tight;
   @extend .glass-morphism;
+
+  font-size: clamp(0.7rem, 4vw, 0.9rem);
 
   &.active {
     @apply border-indigo-500/50 text-indigo-300 shadow-[0_0_20px_rgba(99,102,241,0.25)];
@@ -16,12 +18,12 @@
 }
 
 .filter-modal-content {
-  @apply w-full max-w-2xl rounded-[2.5rem] p-10 relative overflow-hidden;
+  @apply w-[92vw] lg:w-full max-w-2xl rounded-[10vw] lg:rounded-[2.5rem] p-[6vw] lg:p-10 relative overflow-hidden;
   @extend .glass-morphism;
 }
 
 .filter-option-btn {
-  @apply px-6 py-4 rounded-2xl text-sm font-semibold transition-all border text-left flex items-center justify-between;
+  @apply px-[5vw] lg:px-6 py-[2vh] lg:py-4 rounded-2xl text-[3.8vw] md:text-sm font-semibold transition-all border text-left flex items-center justify-between;
 
   &.active {
     @apply bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/20;

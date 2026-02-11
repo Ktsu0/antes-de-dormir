@@ -7,6 +7,7 @@ import CreateStoryModal from "./components/CreateStoryModal";
 import FloatingRandomButton from "./components/FloatingRandomButton";
 import Layout from "./components/Layout";
 import CategoryFilter from "./components/CategoryFilter";
+import RandomStoryModal from "./components/RandomStoryModal";
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,9 +19,9 @@ function App() {
           <div className="pb-20">
             <Header onOpenCreate={() => setIsModalOpen(true)} />
 
-            <div className="max-w-[1920px] mx-auto px-6 lg:px-12 pt-40 grid grid-cols-1 lg:grid-cols-12 gap-10">
-              {/* Sidebar Left: Filters */}
-              <aside className="hidden lg:block col-span-3 sticky top-36 h-fit space-y-8">
+            <div className="max-w-[1920px] mx-auto px-[5vw] lg:px-[8vw] pt-[15vh] lg:pt-40 grid grid-cols-1 lg:grid-cols-12 gap-[4vw]">
+              {/* Sidebar Left: Filters - Agora visível em mobile também */}
+              <aside className="col-span-1 lg:col-span-3 sticky top-28 lg:top-36 h-fit space-y-4 lg:space-y-8 z-20">
                 <CategoryFilter />
               </aside>
 
@@ -36,6 +37,7 @@ function App() {
           </div>
         </Layout>
         <FloatingRandomButton />
+        <RandomStoryModal />
       </StoryProvider>
     </AuthProvider>
   );
