@@ -255,10 +255,20 @@ export const StoryProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from("relatos")
-        .select("*, users!relatos_id_users_fkey(nomeUser)")
-        .limit(20);
+        .select(
+          `
+          *,
+          users!relatos_id_users_fkey(id_users, nomeUser)
+        `,
+        )
+        .limit(30); // Puxamos 30 para ter mais variedade
 
-      if (error || !data || data.length === 0) return null;
+      if (error) {
+        console.error("Erro no sorteio:", error);
+        return null;
+      }
+
+      if (!data || data.length === 0) return null;
 
       const rawStory = data[Math.floor(Math.random() * data.length)];
 
@@ -272,15 +282,21 @@ export const StoryProvider = ({ children }) => {
           : rawStory.users?.nomeUser || "Usuário",
       };
     } catch (err) {
-      console.error("Random story error:", err);
+      console.error("Critical random story error:", err);
       return null;
     }
   };
 
   const openRandomStory = async () => {
+    // Abre o modal imediatamente com loading
+    setRandomStoryModal({ isOpen: true, story: null });
     const story = await getRandomStory();
     if (story) {
       setRandomStoryModal({ isOpen: true, story });
+    } else {
+      // Se falhar, fecha para não travar
+      setRandomStoryModal({ isOpen: false, story: null });
+      alert("Não foi possível encontrar um relato místico no momento.");
     }
   };
 

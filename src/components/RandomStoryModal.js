@@ -16,9 +16,32 @@ const RandomStoryModal = () => {
   const [commentText, setCommentText] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
 
-  if (!randomStoryModal.isOpen || !randomStoryModal.story) return null;
+  if (!randomStoryModal.isOpen) return null;
 
   const { story } = randomStoryModal;
+
+  if (!story) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        >
+          <div className="flex flex-col items-center gap-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 rounded-full border-t-2 border-indigo-500 border-r-2 border-transparent"
+            />
+            <p className="text-indigo-300 font-bold tracking-[0.3em] uppercase text-[10px] animate-pulse">
+              Consultando os Astros...
+            </p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   const handleLike = () => {
     if (!user) {
@@ -173,7 +196,7 @@ const RandomStoryModal = () => {
                 className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_auto] hover:bg-right transition-all duration-500 rounded-2xl text-white font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 active:scale-[0.98]"
               >
                 <Sparkles className="w-4 h-4" />
-                Sortear Outra Estrela
+                Outro Relato Aleatório
               </button>
             </div>
           </div>
