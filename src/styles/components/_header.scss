@@ -1,15 +1,16 @@
 .header-main {
-  @apply fixed top-0 left-0 right-0 z-50 px-[5vw] lg:px-[8vw] py-[2vh] lg:py-6 pointer-events-none;
+  @apply fixed top-0 left-0 right-0 z-50 px-[5vw] lg:px-[8vw] py-4 lg:py-6 pointer-events-none;
   background: linear-gradient(
     180deg,
-    rgba(10, 1, 24, 0.9) 0%,
+    rgba(10, 1, 24, 0.95) 0%,
+    rgba(10, 1, 24, 0.7) 80%,
     rgba(10, 1, 24, 0) 100%
   );
   backdrop-filter: blur(20px);
 }
 
 .header-container {
-  @apply max-w-[1920px] mx-auto flex justify-between items-center h-[8vh] min-h-[60px] max-h-24;
+  @apply max-w-[1920px] mx-auto flex justify-between items-center h-16 lg:h-[8vh] min-h-[60px] max-h-24;
 }
 
 .header-interactive {

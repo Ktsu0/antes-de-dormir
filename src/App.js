@@ -19,13 +19,10 @@ function App() {
           <div className="pb-20">
             <Header onOpenCreate={() => setIsModalOpen(true)} />
 
-            <div className="max-w-[1920px] mx-auto px-[5vw] lg:px-[8vw] pt-[15vh] lg:pt-40 grid grid-cols-1 lg:grid-cols-12 gap-[4vw]">
-              {/* Sidebar Left: Filters - Agora visível em mobile também */}
-              <aside className="col-span-1 lg:col-span-3 sticky top-28 lg:top-36 h-fit space-y-4 lg:space-y-8 z-20">
+            <div className="max-w-[1920px] mx-auto px-[5vw] lg:px-[8vw] pt-32 lg:pt-40 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-[4vw]">
+              <aside className="col-span-1 lg:col-span-3 lg:sticky lg:top-36 h-fit space-y-4 lg:space-y-8 z-20">
                 <CategoryFilter />
               </aside>
-
-              {/* Main Content: Story List */}
               <main className="col-span-1 lg:col-span-6 space-y-6">
                 <StoryList />
               </main>
