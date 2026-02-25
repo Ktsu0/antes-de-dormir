@@ -164,6 +164,8 @@ export const StoryProvider = ({ children }) => {
     // Enviar para o Activepieces (Telegram Webhook)
     try {
       const webhookUrl = process.env.REACT_APP_ACTIVEPIECES_WEBHOOK_URL;
+      console.log("Tentando enviar para Activepieces. URL:", webhookUrl);
+
       if (webhookUrl) {
         fetch(webhookUrl, {
           method: "POST",
@@ -176,8 +178,14 @@ export const StoryProvider = ({ children }) => {
             usuario: is_anonymous ? "Anônimo" : user.email || "Usuário",
             data: new Date().toLocaleString("pt-BR"),
           }),
-        }).catch((err) =>
-          console.error("Erro ao enviar para Activepieces:", err),
+        })
+          .then((res) => console.log("Resposta do Activepieces:", res.status))
+          .catch((err) =>
+            console.error("Erro ao enviar para Activepieces:", err),
+          );
+      } else {
+        console.warn(
+          "Webhook URL não encontrada! Verifique seu .env ou variáveis do Vercel.",
         );
       }
     } catch (e) {
@@ -207,6 +215,8 @@ export const StoryProvider = ({ children }) => {
     // Enviar para o Activepieces (Telegram Webhook via PUT)
     try {
       const webhookUrl = process.env.REACT_APP_ACTIVEPIECES_WEBHOOK_URL;
+      console.log("Tentando enviar PUT para Activepieces. URL:", webhookUrl);
+
       if (webhookUrl) {
         fetch(webhookUrl, {
           method: "PUT",
@@ -221,9 +231,15 @@ export const StoryProvider = ({ children }) => {
             data_edicao: new Date().toLocaleString("pt-BR"),
             acao: "edicao",
           }),
-        }).catch((err) =>
-          console.error("Erro ao enviar PUT para Activepieces:", err),
-        );
+        })
+          .then((res) =>
+            console.log("Resposta PUT do Activepieces:", res.status),
+          )
+          .catch((err) =>
+            console.error("Erro ao enviar PUT para Activepieces:", err),
+          );
+      } else {
+        console.warn("Webhook URL (PUT) não encontrada!");
       }
     } catch (e) {
       console.error("Erro no fetch PUT do Activepieces:", e);
