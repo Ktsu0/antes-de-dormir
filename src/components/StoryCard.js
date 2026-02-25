@@ -5,6 +5,7 @@ import {
   MessageCircle,
   Share2,
   Trash2,
+  Edit2,
   MoreHorizontal,
   User,
   Send,
@@ -15,12 +16,27 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const StoryCard = memo(({ story }) => {
-  const { likeStory, addComment, deleteStory } = useStories();
+  const { updateStory, likeStory, addComment, deleteStory } = useStories();
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(story.content);
   const shouldTruncate = story.content.length > 450;
+
+  const handleUpdate = async () => {
+    try {
+      await updateStory(story.id, {
+        content: editedContent,
+        categoryName: story.category_name,
+        is_anonymous: story.is_anonymous,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      alert("Erro ao editar: " + error.message);
+    }
+  };
   const displayContent =
     shouldTruncate && !isExpanded
       ? story.content.substring(0, 450) + "..."
@@ -116,13 +132,22 @@ const StoryCard = memo(({ story }) => {
         </div>
 
         {isOwner ? (
-          <button
-            onClick={handleDelete}
-            className="text-zinc-500 hover:text-red-400 transition-colors p-2.5 hover:bg-red-500/10 rounded-xl border border-transparent hover:border-red-500/10"
-            title="Apagar relato"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="text-zinc-500 hover:text-indigo-400 transition-colors p-2.5 hover:bg-indigo-500/10 rounded-xl border border-transparent hover:border-indigo-500/10"
+              title="Editar relato"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="text-zinc-500 hover:text-red-400 transition-colors p-2.5 hover:bg-red-500/10 rounded-xl border border-transparent hover:border-red-500/10"
+              title="Apagar relato"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
           <button className="text-zinc-500 hover:text-white transition-colors p-2.5 hover:bg-white/5 rounded-xl border border-transparent hover:border-white/5">
             <MoreHorizontal className="w-5 h-5" />
@@ -131,11 +156,38 @@ const StoryCard = memo(({ story }) => {
       </div>
 
       <div className="story-content-text">
-        <p className="whitespace-pre-line leading-relaxed text-zinc-300">
-          {displayContent}
-        </p>
+        {isEditing ? (
+          <div className="space-y-4">
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="input-mystical w-full min-h-[150px] text-zinc-300 p-4"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpdate}
+                className="btn-primary text-xs py-2 px-4"
+              >
+                Salvar Alterações
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedContent(story.content);
+                }}
+                className="text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-wider px-4"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="whitespace-pre-line leading-relaxed text-zinc-300">
+            {displayContent}
+          </p>
+        )}
 
-        {shouldTruncate && (
+        {shouldTruncate && !isEditing && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 group/more"

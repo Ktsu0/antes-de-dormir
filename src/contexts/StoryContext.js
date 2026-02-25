@@ -161,6 +161,29 @@ export const StoryProvider = ({ children }) => {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Must be logged in to post");
 
+    // Enviar para o Activepieces (Telegram Webhook)
+    try {
+      const webhookUrl = process.env.REACT_APP_ACTIVEPIECES_WEBHOOK_URL;
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            relato: content,
+            categoria: categoryName,
+            usuario: is_anonymous ? "Anônimo" : user.email || "Usuário",
+            data: new Date().toLocaleString("pt-BR"),
+          }),
+        }).catch((err) =>
+          console.error("Erro ao enviar para Activepieces:", err),
+        );
+      }
+    } catch (e) {
+      console.error("Erro no fetch do Activepieces:", e);
+    }
+
     const { error } = await supabase.from("relatos").insert([
       {
         descricao: content,
@@ -172,6 +195,51 @@ export const StoryProvider = ({ children }) => {
 
     if (error) throw error;
     // Realtime will handle fetch
+  };
+
+  const updateStory = async (storyId, storyData) => {
+    const { content, categoryName, is_anonymous } = storyData;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Must be logged in to edit");
+
+    // Enviar para o Activepieces (Telegram Webhook via PUT)
+    try {
+      const webhookUrl = process.env.REACT_APP_ACTIVEPIECES_WEBHOOK_URL;
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: storyId,
+            relato: content,
+            categoria: categoryName,
+            usuario: is_anonymous ? "Anônimo" : user.email || "Usuário",
+            data_edicao: new Date().toLocaleString("pt-BR"),
+            acao: "edicao",
+          }),
+        }).catch((err) =>
+          console.error("Erro ao enviar PUT para Activepieces:", err),
+        );
+      }
+    } catch (e) {
+      console.error("Erro no fetch PUT do Activepieces:", e);
+    }
+
+    const { error } = await supabase
+      .from("relatos")
+      .update({
+        descricao: content,
+        nomeCategoria: categoryName,
+        is_anonymous: is_anonymous,
+      })
+      .eq("id_relatos", storyId)
+      .eq("id_users", user.id);
+
+    if (error) throw error;
   };
 
   const likeStory = async (storyId) => {
@@ -317,6 +385,7 @@ export const StoryProvider = ({ children }) => {
         categories,
         loading,
         addStory,
+        updateStory,
         likeStory,
         addComment,
         deleteStory,
