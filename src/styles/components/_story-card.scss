@@ -1,6 +1,8 @@
 .story-card {
-  @apply rounded-[8vw] lg:rounded-[2rem] p-[6vw] lg:p-8 mb-[4vh] lg:mb-8;
   @extend .glass-morphism-card;
+  border-radius: clamp(1.5rem, 8vw, 2rem);
+  padding: clamp(1.25rem, 6vw, 2rem);
+  margin-bottom: clamp(1.5rem, 4vh, 2rem);
 }
 
 .story-card-header {
@@ -66,7 +68,15 @@
 }
 
 .comment-item {
-  @apply flex gap-4;
+  @apply flex gap-3;
+}
+
+.comment-avatar {
+  @apply w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 text-zinc-500 ring-1 ring-white/10;
+
+  &.comment-avatar-own {
+    @apply bg-gradient-to-tr from-indigo-600 to-purple-600 text-white ring-white/10 shadow-md shadow-indigo-500/10;
+  }
 }
 
 .comment-bubble {
@@ -75,4 +85,8 @@
   .comment-item:hover & {
     @apply border-indigo-500/20;
   }
+}
+
+.comment-author {
+  @apply text-[11px] font-bold text-indigo-300/90 mb-1 tracking-wide;
 }

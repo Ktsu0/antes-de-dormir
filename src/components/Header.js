@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Pencil, Check, X as XIcon } from "lucide-react";
 import Logo from "./Logo";
 import { supabase } from "../lib/supabase";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useToast } from "../contexts/ToastContext";
 
 const Header = ({ onOpenCreate }) => {
   const { user, login, logout, signUp } = useAuth();
+  const { toast } = useToast();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showProfileWindow, setShowProfileWindow] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
   const [newUsername, setNewUsername] = useState("");
 
   const handleUpdateProfile = async (e) => {
@@ -34,10 +38,10 @@ const Header = ({ onOpenCreate }) => {
 
       if (authError) throw authError;
 
-      setShowProfileEdit(false);
-      alert("Perfil atualizado com sucesso!");
+      setIsEditingName(false);
+      toast("Perfil atualizado com sucesso!", "success");
     } catch (error) {
-      alert("Erro ao atualizar: " + error.message);
+      toast("Erro ao atualizar: " + error.message, "error");
     }
     setLoading(false);
   };
@@ -54,13 +58,14 @@ const Header = ({ onOpenCreate }) => {
       setShowAuthModal(false);
     } catch (error) {
       if (error.message.includes("rate limit")) {
-        alert(
+        toast(
           "Ops! Muitas tentativas em pouco tempo. Por segurança, aguarde alguns minutos antes de tentar novamente ou use o login social.",
+          "error",
         );
       } else if (error.message.includes("Invalid login credentials")) {
-        alert("E-mail ou senha incorretos. Verifique seus dados.");
+        toast("E-mail ou senha incorretos. Verifique seus dados.", "error");
       } else {
-        alert("Erro: " + error.message);
+        toast("Erro: " + error.message, "error");
       }
     }
     setLoading(false);
@@ -76,7 +81,7 @@ const Header = ({ onOpenCreate }) => {
       });
       if (error) throw error;
     } catch (error) {
-      alert("Erro Google: " + error.message);
+      toast("Erro Google: " + error.message, "error");
     }
   };
 
@@ -106,63 +111,22 @@ const Header = ({ onOpenCreate }) => {
                     <span>✍️</span> Escrever Fato
                   </motion.button>
 
-                  <div className="relative">
-                    <motion.button
-                      onClick={() => setShowProfileMenu(!showProfileMenu)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="profile-button group"
-                    >
-                      <div className="profile-avatar">
-                        {(
-                          user.user_metadata?.nomeUser?.[0] || user.email?.[0]
-                        ).toUpperCase()}
-                      </div>
-                    </motion.button>
-
-                    <AnimatePresence>
-                      {showProfileMenu && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="profile-dropdown"
-                        >
-                          <div className="px-5 py-4 border-b border-white/5">
-                            <p className="text-sm font-bold text-white truncate">
-                              {user.email}
-                            </p>
-                          </div>
-
-                          <div className="p-2 space-y-1">
-                            <button
-                              onClick={() => {
-                                setNewUsername(
-                                  user.user_metadata?.nomeUser || "",
-                                );
-                                setShowProfileEdit(true);
-                                setShowProfileMenu(false);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
-                            >
-                              <User className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
-                              Editar Perfil
-                            </button>
-                            <button
-                              onClick={() => {
-                                logout();
-                                setShowProfileMenu(false);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-2xl transition-all group"
-                            >
-                              <LogOut className="w-4 h-4 text-red-500/50 group-hover:text-red-400 transition-colors" />
-                              Sair
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <motion.button
+                    onClick={() => {
+                      setNewUsername(user.user_metadata?.nomeUser || "");
+                      setIsEditingName(false);
+                      setShowProfileWindow(true);
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="profile-button group"
+                  >
+                    <div className="profile-avatar">
+                      {(
+                        user.user_metadata?.nomeUser?.[0] || user.email?.[0]
+                      ).toUpperCase()}
+                    </div>
+                  </motion.button>
                 </>
               ) : (
                 <button
@@ -244,7 +208,7 @@ const Header = ({ onOpenCreate }) => {
 
                 <div className="flex items-center gap-4 py-2">
                   <div className="h-px bg-white/5 flex-1"></div>
-                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                     Ou com Email
                   </span>
                   <div className="h-px bg-white/5 flex-1"></div>
@@ -320,62 +284,105 @@ const Header = ({ onOpenCreate }) => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showProfileEdit && (
+        {showProfileWindow && user && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowProfileEdit(false)}
+              onClick={() => setShowProfileWindow(false)}
               className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-white/[0.03] backdrop-blur-[40px] rounded-[3rem] border border-white/10 p-10 shadow-2xl overflow-hidden"
+              className="profile-window"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-              <h3 className="text-2xl font-bold text-white mb-2">
-                Editar Perfil
-              </h3>
-              <p className="text-zinc-500 text-sm mb-8">
-                Escolha como será identificada nos relatos públicos.
-              </p>
 
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <div className="space-y-3">
-                  <label className="text-xs font-bold text-zinc-600 uppercase tracking-widest ml-1">
-                    Seu Nome
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={30}
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    className="input-mystical w-full h-14"
-                    placeholder="Ex: Viajante Estelar"
-                  />
+              <button
+                onClick={() => setShowProfileWindow(false)}
+                className="absolute top-6 right-6 p-2 rounded-2xl hover:bg-white/5 text-zinc-500 hover:text-white transition-colors z-10"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+
+              <div className="relative z-10 flex flex-col items-center text-center mb-8">
+                <div className="profile-window-avatar">
+                  {(
+                    user.user_metadata?.nomeUser?.[0] || user.email?.[0]
+                  ).toUpperCase()}
                 </div>
 
-                <div className="flex gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileEdit(false)}
-                    className="flex-1 h-14 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all"
+                {isEditingName ? (
+                  <form
+                    onSubmit={handleUpdateProfile}
+                    className="flex items-center gap-2 mt-5 w-full max-w-[280px]"
                   >
-                    Cancelar
-                  </button>
+                    <input
+                      type="text"
+                      autoFocus
+                      required
+                      maxLength={30}
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      className="input-mystical h-12 text-sm text-center flex-1"
+                      placeholder="Ex: Viajante Estelar"
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-12 h-12 flex-shrink-0 rounded-xl bg-indigo-600 text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all"
+                      title="Salvar"
+                    >
+                      <Check className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingName(false)}
+                      className="w-12 h-12 flex-shrink-0 rounded-xl bg-white/5 text-zinc-400 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                      title="Cancelar"
+                    >
+                      <XIcon className="w-5 h-5" />
+                    </button>
+                  </form>
+                ) : (
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 h-14 rounded-2xl btn-primary font-bold shadow-lg shadow-indigo-500/20"
+                    onClick={() => setIsEditingName(true)}
+                    className="flex items-center gap-2 mt-5 group"
                   >
-                    {loading ? "Salvando..." : "Salvar"}
+                    <h3 className="text-2xl font-bold text-white tracking-tight">
+                      {user.user_metadata?.nomeUser || "Viajante Sem Nome"}
+                    </h3>
+                    <Pencil className="w-4 h-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
                   </button>
-                </div>
-              </form>
+                )}
+
+                <p className="text-zinc-500 text-sm mt-2 truncate max-w-full">
+                  {user.email}
+                </p>
+
+                {user.created_at && (
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-4">
+                    Na jornada desde{" "}
+                    {format(new Date(user.created_at), "d 'de' MMMM 'de' yyyy", {
+                      locale: ptBR,
+                    })}
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  logout();
+                  setShowProfileWindow(false);
+                }}
+                className="w-full h-14 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-400 font-bold flex items-center justify-center gap-3 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair da Conta
+              </button>
             </motion.div>
           </div>
         )}

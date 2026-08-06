@@ -12,17 +12,20 @@ import {
 } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const StoryCard = memo(({ story }) => {
   const { updateStory, likeStory, addComment, deleteStory } = useStories();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(story.content);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const shouldTruncate = story.content.length > 450;
 
   const handleUpdate = async () => {
@@ -34,7 +37,7 @@ const StoryCard = memo(({ story }) => {
       });
       setIsEditing(false);
     } catch (error) {
-      alert("Erro ao editar: " + error.message);
+      toast("Erro ao editar: " + error.message, "error");
     }
   };
   const displayContent =
@@ -49,19 +52,19 @@ const StoryCard = memo(({ story }) => {
   const handleLike = (e) => {
     e.preventDefault();
     if (!user) {
-      alert("Você precisa estar logado para curtir este relato.");
+      toast("Você precisa estar logado para curtir este relato.", "error");
       return;
     }
     likeStory(story.id);
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Tem certeza que deseja apagar este relato?")) {
-      try {
-        await deleteStory(story.id);
-      } catch (error) {
-        alert("Erro ao apagar: " + error.message);
-      }
+    setShowDeleteConfirm(false);
+    try {
+      await deleteStory(story.id);
+      toast("Relato apagado.", "success");
+    } catch (error) {
+      toast("Erro ao apagar: " + error.message, "error");
     }
   };
 
@@ -72,7 +75,7 @@ const StoryCard = memo(({ story }) => {
       await addComment(story.id, commentText);
       setCommentText("");
     } catch (error) {
-      alert(error.message);
+      toast(error.message, "error");
     }
   };
 
@@ -100,7 +103,7 @@ const StoryCard = memo(({ story }) => {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(shareData.url);
-        alert("Link copiado para a área de transferência!");
+        toast("Link copiado para a área de transferência!", "success");
       }
     } catch (err) {
       console.error("Erro ao compartilhar:", err);
@@ -124,7 +127,7 @@ const StoryCard = memo(({ story }) => {
             <div className="story-meta">
               <span className="story-category-tag">{story.category_name}</span>
               <span className="text-zinc-600">•</span>
-              <span className="text-zinc-600 text-[10px] lowercase tracking-wide font-medium">
+              <span className="text-zinc-500 text-[10px] lowercase tracking-wide font-medium">
                 {timeAgo(story.created_at)}
               </span>
             </div>
@@ -141,7 +144,7 @@ const StoryCard = memo(({ story }) => {
               <Edit2 className="w-4 h-4" />
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="text-zinc-500 hover:text-red-400 transition-colors p-2.5 hover:bg-red-500/10 rounded-xl border border-transparent hover:border-red-500/10"
               title="Apagar relato"
             >
@@ -235,10 +238,15 @@ const StoryCard = memo(({ story }) => {
               <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar pb-4">
                 {story.comentarios?.map((comment) => (
                   <div key={comment.id} className="comment-item">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-[10px] border border-white/5 text-zinc-500 font-bold uppercase">
-                      {comment.id_users?.slice(0, 2) || "??"}
+                    <div
+                      className={`comment-avatar ${comment.is_own ? "comment-avatar-own" : ""}`}
+                    >
+                      <User className="w-4 h-4" />
                     </div>
                     <div className="comment-bubble">
+                      <p className="comment-author">
+                        {comment.is_own ? "Você" : "Anônimo"}
+                      </p>
                       <p className="text-zinc-300 text-sm font-light">
                         {comment.content}
                       </p>
@@ -246,7 +254,7 @@ const StoryCard = memo(({ story }) => {
                   </div>
                 ))}
                 {(!story.comentarios || story.comentarios.length === 0) && (
-                  <p className="text-center text-zinc-600 text-xs py-6 font-light">
+                  <p className="text-center text-zinc-500 text-xs py-6 font-light">
                     Sem comentários ainda. Manifeste seu apoio!
                   </p>
                 )}
@@ -267,7 +275,7 @@ const StoryCard = memo(({ story }) => {
                       className="input-mystical h-11 text-sm pr-16"
                     />
                     <span
-                      className={`absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold ${commentText.length > 550 ? "text-pink-500" : "text-zinc-600"}`}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold ${commentText.length > 550 ? "text-pink-500" : "text-zinc-500"}`}
                     >
                       {commentText.length}/600
                     </span>
@@ -288,6 +296,51 @@ const StoryCard = memo(({ story }) => {
               )}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white/[0.03] backdrop-blur-[40px] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl overflow-hidden text-center"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-pink-500 to-red-500" />
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Apagar este relato?
+              </h3>
+              <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
+                Essa ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 h-12 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 h-12 rounded-2xl bg-red-500/90 hover:bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 transition-all"
+                >
+                  Apagar
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -32,6 +32,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Visible keyboard focus across every interactive element site-wide */
+:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.9); // indigo-400
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* Background Atmosphere */
 .mystical-bg {
   position: fixed;
@@ -153,7 +160,9 @@ body {
 }
 
 .btn-primary {
-  @apply px-[6vw] lg:px-8 py-[2vh] lg:py-4 rounded-full font-bold uppercase tracking-wider text-[3.2vw] md:text-xs lg:text-sm transition-all duration-500 flex items-center justify-center gap-3 relative overflow-hidden;
+  @apply rounded-full font-bold uppercase tracking-wider transition-all duration-500 flex items-center justify-center gap-3 relative overflow-hidden;
+  padding: clamp(0.75rem, 2vh, 1rem) clamp(1.25rem, 6vw, 2rem);
+  font-size: clamp(0.7rem, 3.2vw, 0.875rem);
   background: linear-gradient(to right, #9333ea, #6366f1, #9333ea);
   background-size: 200% auto;
   color: white;

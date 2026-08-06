@@ -8,12 +8,14 @@ import React, {
 } from "react";
 import { supabase } from "../lib/supabase";
 import { CATEGORIES } from "../data/mockStories";
+import { useToast } from "./ToastContext";
 
 const StoryContext = createContext();
 
 export const useStories = () => useContext(StoryContext);
 
 export const StoryProvider = ({ children }) => {
+  const { toast } = useToast();
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -88,6 +90,7 @@ export const StoryProvider = ({ children }) => {
               ...c,
               id: c.id_comentarios,
               content: c.descricao || c.descrição,
+              is_own: user ? c.id_users === user.id : false,
             })),
           };
         });
@@ -307,6 +310,7 @@ export const StoryProvider = ({ children }) => {
       id_users: user.id,
       created_at: new Date().toISOString(),
       content: content,
+      is_own: true,
     };
 
     setStories((prev) =>
@@ -380,7 +384,10 @@ export const StoryProvider = ({ children }) => {
     } else {
       // Se falhar, fecha para não travar
       setRandomStoryModal({ isOpen: false, story: null });
-      alert("Não foi possível encontrar um relato místico no momento.");
+      toast(
+        "Não foi possível encontrar um relato místico no momento.",
+        "error",
+      );
     }
   };
 

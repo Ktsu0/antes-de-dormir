@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import { X, PenTool, Globe, Lock } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { CATEGORIES } from "../data/mockStories";
+import { useToast } from "../contexts/ToastContext";
 
 const CreateStoryModal = ({ onClose }) => {
   const { addStory } = useStories();
+  const { toast } = useToast();
   const [content, setContent] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(true);
@@ -25,7 +27,7 @@ const CreateStoryModal = ({ onClose }) => {
       });
       onClose();
     } catch (error) {
-      alert(error.message);
+      toast(error.message, "error");
     }
     setLoading(false);
   };
@@ -71,7 +73,7 @@ const CreateStoryModal = ({ onClose }) => {
           <form onSubmit={handleSubmit} className="space-y-10">
             <div className="space-y-4">
               <div className="flex justify-between items-center px-2">
-                <label className="text-xs font-bold text-zinc-600 uppercase tracking-[0.2em]">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">
                   Conte sua história
                 </label>
                 <span
@@ -91,7 +93,7 @@ const CreateStoryModal = ({ onClose }) => {
             </div>
 
             <div className="space-y-4">
-              <label className="text-xs font-bold text-zinc-600 uppercase tracking-[0.2em] ml-2">
+              <label className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-2">
                 Como você define este momento?
               </label>
               <select

@@ -56,14 +56,14 @@
   &.anonymous {
     @apply text-indigo-400 bg-indigo-500/10 border border-indigo-500/20;
     &.inactive {
-      @apply text-zinc-600 hover:text-zinc-400 border-transparent;
+      @apply text-zinc-500 hover:text-zinc-300 border-transparent;
     }
   }
 
   &.public {
     @apply text-emerald-400 bg-emerald-500/10 border border-emerald-500/20;
     &.inactive {
-      @apply text-zinc-600 hover:text-zinc-400 border-transparent;
+      @apply text-zinc-500 hover:text-zinc-300 border-transparent;
     }
   }
 }

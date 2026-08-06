@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Heart, MessageCircle, Send } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 
 const RandomStoryModal = () => {
   const {
@@ -13,6 +14,7 @@ const RandomStoryModal = () => {
     addComment,
   } = useStories();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [commentText, setCommentText] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
 
@@ -45,7 +47,7 @@ const RandomStoryModal = () => {
 
   const handleLike = () => {
     if (!user) {
-      alert("Você precisa estar logado para curtir.");
+      toast("Você precisa estar logado para curtir.", "error");
       return;
     }
     likeStory(story.id);
@@ -57,9 +59,9 @@ const RandomStoryModal = () => {
     try {
       await addComment(story.id, commentText);
       setCommentText("");
-      alert("Comentário enviado com sucesso!");
+      toast("Comentário enviado com sucesso!", "success");
     } catch (err) {
-      alert(err.message);
+      toast(err.message, "error");
     }
   };
 
