@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import icon1 from "../assets/icon1.png";
 import icon2 from "../assets/icon2.png";
 import icon3 from "../assets/icon3.png";
@@ -9,7 +9,7 @@ const MAX_SIMULTANEOUS = 3; // Maximum 3 icons visible at once
 
 const MysticalBackground = memo(() => {
   const [activeIcons, setActiveIcons] = useState([]);
-  const [iconCounter, setIconCounter] = useState(0);
+  const iconCounterRef = useRef(0);
 
   const generateRandomPosition = useCallback((existingIcons) => {
     const minDistance = 25; // Minimum distance between icons (%)
@@ -37,8 +37,8 @@ const MysticalBackground = memo(() => {
   }, []);
 
   const createNewIcon = useCallback(
-    (counter) => {
-      const { x, y } = generateRandomPosition(activeIcons);
+    (counter, existingIcons) => {
+      const { x, y } = generateRandomPosition(existingIcons);
       const size = 30 + Math.random() * 30; // 30-60px
       const iconSrc = ICONS[Math.floor(Math.random() * ICONS.length)];
 
@@ -52,7 +52,7 @@ const MysticalBackground = memo(() => {
         opacity: 0,
       };
     },
-    [activeIcons, generateRandomPosition],
+    [generateRandomPosition],
   );
 
   useEffect(() => {
@@ -74,7 +74,7 @@ const MysticalBackground = memo(() => {
       });
     }
     setActiveIcons(initialIcons);
-    setIconCounter(MAX_SIMULTANEOUS);
+    iconCounterRef.current = MAX_SIMULTANEOUS;
   }, [generateRandomPosition]);
 
   // Icon lifecycle management
@@ -91,8 +91,10 @@ const MysticalBackground = memo(() => {
 
         // Add new icon if we have less than MAX_SIMULTANEOUS
         if (remainingIcons.length < MAX_SIMULTANEOUS) {
-          const newIcon = createNewIcon(iconCounter);
-          setIconCounter((prev) => prev + 1);
+          const newIcon = createNewIcon(
+            iconCounterRef.current++,
+            remainingIcons,
+          );
           return [...remainingIcons, newIcon];
         }
 
@@ -101,7 +103,7 @@ const MysticalBackground = memo(() => {
     }, 1000); // Check every second instead of requestAnimationFrame
 
     return () => clearInterval(interval);
-  }, [iconCounter, createNewIcon]);
+  }, [createNewIcon]);
 
   return (
     <>

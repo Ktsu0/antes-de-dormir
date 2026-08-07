@@ -18,7 +18,7 @@ const FloatingRandomButton = () => {
         position: "fixed",
         bottom: "5vh",
         right: "5vw",
-        zIndex: 9999,
+        zIndex: 60,
         background: "linear-gradient(135deg, #6366f1, #a855f7)",
         boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.5)",
       }}

@@ -13,5 +13,3 @@ export const CATEGORIES = [
   "Experiência Sobrenatural",
   "Outros",
 ];
-
-export const INITIAL_STORIES = [];

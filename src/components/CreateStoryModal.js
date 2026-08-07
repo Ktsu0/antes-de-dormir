@@ -4,6 +4,7 @@ import { X, PenTool, Globe, Lock } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { CATEGORIES } from "../data/mockStories";
 import { useToast } from "../contexts/ToastContext";
+import Modal from "./Modal";
 
 const CreateStoryModal = ({ onClose }) => {
   const { addStory } = useStories();
@@ -33,22 +34,7 @@ const CreateStoryModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="modal-backdrop"
-      />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="modal-panel"
-      >
+    <Modal onClose={onClose} panelClassName="modal-panel">
         <div className="modal-inner">
           <div className="modal-header">
             <div className="flex items-center gap-5">
@@ -157,8 +143,7 @@ const CreateStoryModal = ({ onClose }) => {
             </div>
           </form>
         </div>
-      </motion.div>
-    </div>
+    </Modal>
   );
 };
 

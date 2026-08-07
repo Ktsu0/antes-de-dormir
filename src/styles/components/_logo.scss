@@ -1,10 +1,10 @@
 .logo-container {
-  @apply flex items-center cursor-pointer select-none pointer-events-auto;
+  @apply flex items-center cursor-pointer select-none pointer-events-auto h-full;
 }
 
 .logo-image {
-  height: 12rem;
-  @apply w-auto object-contain brightness-110 transition-all duration-500;
+  max-height: 12rem;
+  @apply h-full w-auto object-contain brightness-110 transition-all duration-500;
   filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.3));
 
   .logo-container:hover & {

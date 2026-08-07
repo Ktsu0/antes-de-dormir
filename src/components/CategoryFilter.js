@@ -62,7 +62,7 @@ const CategoryFilter = () => {
     <div className="space-y-6">
       {/* Versão Desktop: Mantém o Dropdown elegante */}
       <div className="hidden lg:flex lg:flex-col gap-4">
-        <div className="relative z-50 text-left" ref={menuRef}>
+        <div className="relative z-10 text-left" ref={menuRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`flex items-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 transition-all group w-full relative z-10 ${
@@ -89,10 +89,10 @@ const CategoryFilter = () => {
                 animate={{ opacity: 1, scaleY: 1, y: 0 }}
                 exit={{ opacity: 0, scaleY: 0.9, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute top-full left-0 w-full bg-slate-900 border border-white/10 border-t-0 rounded-b-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-3xl z-0"
+                className="absolute top-full left-0 w-full max-h-[min(28rem,70vh)] flex flex-col bg-slate-900 border border-white/10 border-t-0 rounded-b-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-3xl z-0"
                 style={{ marginTop: "-1px", originY: 0 }}
               >
-                <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
+                <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5 flex-shrink-0">
                   <span className="text-sm font-bold text-white tracking-wide">
                     Categorias
                   </span>
@@ -104,7 +104,7 @@ const CategoryFilter = () => {
                   </button>
                 </div>
 
-                <div className="max-h-[320px] overflow-y-auto p-2 space-y-1 no-scrollbar">
+                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 no-scrollbar">
                   {categories.map((cat) => {
                     const isSelected = selected.includes(cat.id);
                     return (
@@ -136,7 +136,7 @@ const CategoryFilter = () => {
                   })}
                 </div>
 
-                <div className="p-4 bg-zinc-950/20 border-t border-white/5">
+                <div className="p-4 bg-zinc-950/20 border-t border-white/5 flex-shrink-0">
                   <button
                     onClick={applyFilters}
                     className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 active:scale-[0.98]"
@@ -185,7 +185,7 @@ const CategoryFilter = () => {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileTap={{ scale: 0.9 }}
-          className="fixed bottom-[5vh] left-[5vw] z-[9999] w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl text-indigo-400"
+          className="fixed bottom-[5vh] left-[5vw] z-[60] w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl text-indigo-400"
         >
           <Filter className="w-6 h-6" />
           {filters.categories?.length > 0 && (
@@ -196,7 +196,7 @@ const CategoryFilter = () => {
         </motion.button>
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <div className="fixed inset-0 z-[10000] flex items-end justify-center px-4 pb-10">
+            <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-10">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

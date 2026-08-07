@@ -4,6 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
+// Escala global de z-index para elementos fixed/absolute que competem pela
+// mesma stacking context (nav, FABs, modais, toasts). Componentes que só
+// empilham conteúdo local (ex.: `relative z-10` dentro de um card) não
+// precisam seguir essa escala.
+//   50    → header fixo
+//   60    → botões flutuantes (FAB de sorteio, FAB de filtros mobile)
+//   100   → modais e overlays de tela cheia (login, criar relato, apagar,
+//           sorteio aleatório, menu de filtros mobile)
+//   9999  → toasts (sempre acima de tudo, inclusive modais abertos)
+
 :root {
   --app-bg: #{$app-bg};
   --app-accent: #{$app-accent};

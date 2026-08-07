@@ -4,6 +4,7 @@ import { Sparkles, X, Heart, MessageCircle, Send } from "lucide-react";
 import { useStories } from "../contexts/StoryContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
+import Modal from "./Modal";
 
 const RandomStoryModal = () => {
   const {
@@ -28,7 +29,7 @@ const RandomStoryModal = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
         >
           <div className="flex flex-col items-center gap-6">
             <motion.div
@@ -67,23 +68,14 @@ const RandomStoryModal = () => {
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-        onClick={closeRandomStory}
+      <Modal
+        onClose={closeRandomStory}
+        backdropClassName="absolute inset-0 bg-black/80 backdrop-blur-md"
+        panelClassName="relative w-full max-w-2xl max-h-[85vh] overflow-x-hidden overflow-y-auto bg-slate-900/40 backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)]"
       >
-        <motion.div
-          initial={{ scale: 0.9, y: 30, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.9, y: 30, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-2xl bg-slate-900/40 backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)] overflow-hidden"
-        >
-          {/* Subtle Glows */}
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
+        {/* Subtle Glows */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
 
           {/* Header */}
           <div className="relative z-10 p-8 md:p-12">
@@ -202,8 +194,7 @@ const RandomStoryModal = () => {
               </button>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+      </Modal>
     </AnimatePresence>
   );
 };

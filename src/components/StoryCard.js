@@ -15,6 +15,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Modal from "./Modal";
 
 const StoryCard = memo(({ story }) => {
   const { updateStory, likeStory, addComment, deleteStory } = useStories();
@@ -301,46 +302,35 @@ const StoryCard = memo(({ story }) => {
 
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowDeleteConfirm(false)}
-              className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-sm bg-white/[0.03] backdrop-blur-[40px] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl overflow-hidden text-center"
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-pink-500 to-red-500" />
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
-                <Trash2 className="w-6 h-6 text-red-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Apagar este relato?
-              </h3>
-              <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-                Essa ação não pode ser desfeita.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-12 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 h-12 rounded-2xl bg-red-500/90 hover:bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 transition-all"
-                >
-                  Apagar
-                </button>
-              </div>
-            </motion.div>
-          </div>
+          <Modal
+            onClose={() => setShowDeleteConfirm(false)}
+            panelClassName="relative w-full max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden bg-white/[0.03] backdrop-blur-[40px] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-pink-500 to-red-500" />
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
+              <Trash2 className="w-6 h-6 text-red-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              Apagar este relato?
+            </h3>
+            <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
+              Essa ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 h-12 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 h-12 rounded-2xl bg-red-500/90 hover:bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 transition-all"
+              >
+                Apagar
+              </button>
+            </div>
+          </Modal>
         )}
       </AnimatePresence>
     </div>

@@ -14,17 +14,30 @@ const StoryContext = createContext();
 
 export const useStories = () => useContext(StoryContext);
 
+// Coluna legada com acento existe em algumas linhas antigas do banco;
+// centraliza o fallback aqui para não espalhar a mesma checagem pelo código.
+const getDescricao = (row) => row.descricao || row.descrição;
+
+const DEFAULT_FILTERS = { categories: [], showLiked: false };
+
+const loadSavedFilters = () => {
+  const savedFilters = localStorage.getItem("relatos_filters");
+  if (!savedFilters) return DEFAULT_FILTERS;
+  try {
+    return JSON.parse(savedFilters);
+  } catch (err) {
+    console.error("Filtros salvos corrompidos, usando padrão:", err);
+    localStorage.removeItem("relatos_filters");
+    return DEFAULT_FILTERS;
+  }
+};
+
 export const StoryProvider = ({ children }) => {
   const { toast } = useToast();
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState(() => {
-    const savedFilters = localStorage.getItem("relatos_filters");
-    return savedFilters
-      ? JSON.parse(savedFilters)
-      : { categories: [], showLiked: false };
-  });
+  const [filters, setFilters] = useState(loadSavedFilters);
 
   const [randomStoryModal, setRandomStoryModal] = useState({
     isOpen: false,
@@ -80,7 +93,7 @@ export const StoryProvider = ({ children }) => {
           return {
             ...story,
             id: story.id_relatos,
-            content: story.descricao || story.descrição,
+            content: getDescricao(story),
             category_name: story.nomeCategoria || "Geral",
             author_name: isAnon ? "Anônimo" : authorName || "Usuário",
             author_id: story.id_users,
@@ -89,7 +102,7 @@ export const StoryProvider = ({ children }) => {
             comentarios: story.comentarios?.map((c) => ({
               ...c,
               id: c.id_comentarios,
-              content: c.descricao || c.descrição,
+              content: getDescricao(c),
               is_own: user ? c.id_users === user.id : false,
             })),
           };
@@ -157,7 +170,7 @@ export const StoryProvider = ({ children }) => {
     localStorage.setItem("relatos_filters", JSON.stringify(filters));
   }, [filters]);
 
-  const addStory = async (storyData) => {
+  const addStory = useCallback(async (storyData) => {
     const { content, categoryName, is_anonymous } = storyData;
     const {
       data: { user },
@@ -206,9 +219,9 @@ export const StoryProvider = ({ children }) => {
 
     if (error) throw error;
     // Realtime will handle fetch
-  };
+  }, []);
 
-  const updateStory = async (storyId, storyData) => {
+  const updateStory = useCallback(async (storyId, storyData) => {
     const { content, categoryName, is_anonymous } = storyData;
     const {
       data: { user },
@@ -259,9 +272,9 @@ export const StoryProvider = ({ children }) => {
       .eq("id_users", user.id);
 
     if (error) throw error;
-  };
+  }, []);
 
-  const likeStory = async (storyId) => {
+  const likeStory = useCallback(async (storyId) => {
     if (processingLikes.current.has(storyId)) return;
     const {
       data: { user },
@@ -269,6 +282,21 @@ export const StoryProvider = ({ children }) => {
     if (!user) return;
 
     processingLikes.current.add(storyId);
+
+    const applyLikeDelta = (isNowLiked) => {
+      setRandomStoryModal((prev) =>
+        prev.story?.id === storyId
+          ? {
+              ...prev,
+              story: {
+                ...prev.story,
+                isLiked: isNowLiked,
+                likes: (prev.story.likes || 0) + (isNowLiked ? 1 : -1),
+              },
+            }
+          : prev,
+      );
+    };
 
     try {
       const { data: existingLike } = await supabase
@@ -284,19 +312,21 @@ export const StoryProvider = ({ children }) => {
           .delete()
           .eq("id_relatos", storyId)
           .eq("id_users", user.id);
+        applyLikeDelta(false);
       } else {
         await supabase
           .from("curtidas")
           .insert([{ id_relatos: storyId, id_users: user.id }]);
+        applyLikeDelta(true);
       }
     } catch (error) {
       console.error("Error liking:", error);
     } finally {
       processingLikes.current.delete(storyId);
     }
-  };
+  }, []);
 
-  const addComment = async (storyId, content) => {
+  const addComment = useCallback(async (storyId, content) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -324,29 +354,53 @@ export const StoryProvider = ({ children }) => {
     const { error } = await supabase
       .from("comentarios")
       .insert([{ descricao: content, id_relatos: storyId, id_users: user.id }]);
-    if (error) fetchStories();
-  };
 
-  const deleteStory = async (storyId) => {
+    if (error) {
+      // Reverte o comentário otimista já que ele não foi salvo de fato
+      setStories((prev) =>
+        prev.map((s) =>
+          s.id === storyId
+            ? {
+                ...s,
+                comentarios: (s.comentarios || []).filter(
+                  (c) => c.id_comentarios !== newCommentTemp.id_comentarios,
+                ),
+              }
+            : s,
+        ),
+      );
+      throw error;
+    }
+  }, []);
+
+  const deleteStory = useCallback(async (storyId) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase
+    const { error } = await supabase
       .from("relatos")
       .delete()
       .eq("id_relatos", storyId)
       .eq("id_users", user.id);
-  };
 
-  const getRandomStory = async () => {
+    if (error) throw error;
+  }, []);
+
+  const getRandomStory = useCallback(async () => {
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const { data, error } = await supabase
         .from("relatos")
         .select(
           `
           *,
-          users!relatos_id_users_fkey(id_users, nomeUser)
+          users!relatos_id_users_fkey(id_users, nomeUser),
+          curtidas:curtidas(count),
+          curtidas_detalhada:curtidas(id_users)
         `,
         )
         .limit(30); // Puxamos 30 para ter mais variedade
@@ -359,23 +413,28 @@ export const StoryProvider = ({ children }) => {
       if (!data || data.length === 0) return null;
 
       const rawStory = data[Math.floor(Math.random() * data.length)];
+      const hasUserLiked = user
+        ? rawStory.curtidas_detalhada?.some((l) => l.id_users === user.id)
+        : false;
 
       return {
         ...rawStory,
         id: rawStory.id_relatos,
-        content: rawStory.descricao || rawStory.descrição,
+        content: getDescricao(rawStory),
         category_name: rawStory.nomeCategoria || "Geral",
         author_name: rawStory.is_anonymous
           ? "Anônimo"
           : rawStory.users?.nomeUser || "Usuário",
+        likes: rawStory.curtidas?.[0]?.count || 0,
+        isLiked: hasUserLiked,
       };
     } catch (err) {
       console.error("Critical random story error:", err);
       return null;
     }
-  };
+  }, []);
 
-  const openRandomStory = async () => {
+  const openRandomStory = useCallback(async () => {
     // Abre o modal imediatamente com loading
     setRandomStoryModal({ isOpen: true, story: null });
     const story = await getRandomStory();
@@ -389,17 +448,21 @@ export const StoryProvider = ({ children }) => {
         "error",
       );
     }
-  };
+  }, [getRandomStory, toast]);
 
-  const closeRandomStory = () => {
+  const closeRandomStory = useCallback(() => {
     setRandomStoryModal({ isOpen: false, story: null });
-  };
+  }, []);
 
-  const filterByCategories = (cats) =>
-    setFilters((prev) => ({ ...prev, categories: cats }));
+  const filterByCategories = useCallback(
+    (cats) => setFilters((prev) => ({ ...prev, categories: cats })),
+    [],
+  );
 
-  const toggleLikedFilter = () =>
-    setFilters((prev) => ({ ...prev, showLiked: !prev.showLiked }));
+  const toggleLikedFilter = useCallback(
+    () => setFilters((prev) => ({ ...prev, showLiked: !prev.showLiked })),
+    [],
+  );
 
   return (
     <StoryContext.Provider
