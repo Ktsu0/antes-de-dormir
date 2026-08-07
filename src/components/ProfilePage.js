@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useStories } from "../contexts/StoryContext";
 import { useToast } from "../contexts/ToastContext";
 import { getUserInitial } from "../utils/user";
 import { format, formatDistanceToNow } from "date-fns";
@@ -22,7 +23,14 @@ const preview = (text, max = 140) => {
   return text.length > max ? text.slice(0, max) + "…" : text;
 };
 
-const StorySection = ({ title, emptyText, loading, items, showLikes }) => (
+const StorySection = ({
+  title,
+  emptyText,
+  loading,
+  items,
+  showLikes,
+  onItemClick,
+}) => (
   <div>
     <h2 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-4 ml-1">
       {title}
@@ -36,9 +44,11 @@ const StorySection = ({ title, emptyText, loading, items, showLikes }) => (
     ) : items && items.length > 0 ? (
       <div className="space-y-3 max-h-[480px] overflow-y-auto no-scrollbar pr-1">
         {items.map((s) => (
-          <div
+          <button
             key={s.id_relatos}
-            className="rounded-2xl p-5 bg-white/5 border border-white/5 hover:border-white/10 transition-colors"
+            type="button"
+            onClick={() => onItemClick(s.id_relatos)}
+            className="w-full text-left rounded-2xl p-5 bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:bg-white/[0.07] transition-colors cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2 gap-3">
               <span className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-widest truncate">
@@ -62,7 +72,7 @@ const StorySection = ({ title, emptyText, loading, items, showLikes }) => (
                 })}
               </p>
             )}
-          </div>
+          </button>
         ))}
       </div>
     ) : (
@@ -75,6 +85,7 @@ const StorySection = ({ title, emptyText, loading, items, showLikes }) => (
 
 const ProfilePage = ({ onBack }) => {
   const { user, logout } = useAuth();
+  const { openStory } = useStories();
   const { toast } = useToast();
   const [isEditingName, setIsEditingName] = useState(false);
   const [newUsername, setNewUsername] = useState(
@@ -286,12 +297,14 @@ const ProfilePage = ({ onBack }) => {
           loading={loading}
           items={data?.written}
           showLikes
+          onItemClick={openStory}
         />
         <StorySection
           title="Relatos que Você Curtiu"
           emptyText="Você ainda não curtiu nenhum relato."
           loading={loading}
           items={data?.liked}
+          onItemClick={openStory}
         />
       </div>
 

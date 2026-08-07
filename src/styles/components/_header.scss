@@ -10,7 +10,7 @@
 }
 
 .header-container {
-  @apply max-w-[1920px] mx-auto flex justify-between items-center h-16 lg:h-[8vh] min-h-[60px] max-h-24;
+  @apply max-w-[1920px] mx-auto flex justify-between items-center h-16 md:h-20 lg:h-24;
 }
 
 .header-interactive {

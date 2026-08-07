@@ -18,6 +18,34 @@ export const useStories = () => useContext(StoryContext);
 // centraliza o fallback aqui para não espalhar a mesma checagem pelo código.
 const getDescricao = (row) => row.descricao || row.descrição;
 
+// Select usado tanto no sorteio aleatório quanto na abertura de um relato
+// específico (ex.: clique num relato do perfil) — ambos exibem o mesmo
+// modal e precisam dos mesmos dados (autor, curtidas).
+const STORY_DETAIL_SELECT = `
+  *,
+  users!relatos_id_users_fkey(id_users, nomeUser),
+  curtidas:curtidas(count),
+  curtidas_detalhada:curtidas(id_users)
+`;
+
+const formatStoryDetail = (rawStory, user) => {
+  const hasUserLiked = user
+    ? rawStory.curtidas_detalhada?.some((l) => l.id_users === user.id)
+    : false;
+
+  return {
+    ...rawStory,
+    id: rawStory.id_relatos,
+    content: getDescricao(rawStory),
+    category_name: rawStory.nomeCategoria || "Geral",
+    author_name: rawStory.is_anonymous
+      ? "Anônimo"
+      : rawStory.users?.nomeUser || "Usuário",
+    likes: rawStory.curtidas?.[0]?.count || 0,
+    isLiked: hasUserLiked,
+  };
+};
+
 const DEFAULT_FILTERS = { categories: [], showLiked: false };
 
 const loadSavedFilters = () => {
@@ -395,14 +423,7 @@ export const StoryProvider = ({ children }) => {
 
       const { data, error } = await supabase
         .from("relatos")
-        .select(
-          `
-          *,
-          users!relatos_id_users_fkey(id_users, nomeUser),
-          curtidas:curtidas(count),
-          curtidas_detalhada:curtidas(id_users)
-        `,
-        )
+        .select(STORY_DETAIL_SELECT)
         .limit(30); // Puxamos 30 para ter mais variedade
 
       if (error) {
@@ -413,23 +434,33 @@ export const StoryProvider = ({ children }) => {
       if (!data || data.length === 0) return null;
 
       const rawStory = data[Math.floor(Math.random() * data.length)];
-      const hasUserLiked = user
-        ? rawStory.curtidas_detalhada?.some((l) => l.id_users === user.id)
-        : false;
-
-      return {
-        ...rawStory,
-        id: rawStory.id_relatos,
-        content: getDescricao(rawStory),
-        category_name: rawStory.nomeCategoria || "Geral",
-        author_name: rawStory.is_anonymous
-          ? "Anônimo"
-          : rawStory.users?.nomeUser || "Usuário",
-        likes: rawStory.curtidas?.[0]?.count || 0,
-        isLiked: hasUserLiked,
-      };
+      return formatStoryDetail(rawStory, user);
     } catch (err) {
       console.error("Critical random story error:", err);
+      return null;
+    }
+  }, []);
+
+  const getStoryById = useCallback(async (storyId) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { data: rawStory, error } = await supabase
+        .from("relatos")
+        .select(STORY_DETAIL_SELECT)
+        .eq("id_relatos", storyId)
+        .maybeSingle();
+
+      if (error || !rawStory) {
+        console.error("Erro ao buscar relato:", error);
+        return null;
+      }
+
+      return formatStoryDetail(rawStory, user);
+    } catch (err) {
+      console.error("Erro crítico ao buscar relato:", err);
       return null;
     }
   }, []);
@@ -449,6 +480,20 @@ export const StoryProvider = ({ children }) => {
       );
     }
   }, [getRandomStory, toast]);
+
+  const openStory = useCallback(
+    async (storyId) => {
+      setRandomStoryModal({ isOpen: true, story: null });
+      const story = await getStoryById(storyId);
+      if (story) {
+        setRandomStoryModal({ isOpen: true, story });
+      } else {
+        setRandomStoryModal({ isOpen: false, story: null });
+        toast("Não foi possível abrir esse relato.", "error");
+      }
+    },
+    [getStoryById, toast],
+  );
 
   const closeRandomStory = useCallback(() => {
     setRandomStoryModal({ isOpen: false, story: null });
@@ -476,7 +521,9 @@ export const StoryProvider = ({ children }) => {
         addComment,
         deleteStory,
         getRandomStory,
+        getStoryById,
         openRandomStory,
+        openStory,
         closeRandomStory,
         randomStoryModal,
         filterByCategories,

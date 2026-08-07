@@ -89,7 +89,7 @@ const CategoryFilter = () => {
                 animate={{ opacity: 1, scaleY: 1, y: 0 }}
                 exit={{ opacity: 0, scaleY: 0.9, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute top-full left-0 w-full max-h-[min(28rem,70vh)] flex flex-col bg-slate-900 border border-white/10 border-t-0 rounded-b-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-3xl z-0"
+                className="absolute top-full left-0 w-full max-h-[min(28rem,calc(100vh-14rem))] flex flex-col bg-slate-900 border border-white/10 border-t-0 rounded-b-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-3xl z-0"
                 style={{ marginTop: "-1px", originY: 0 }}
               >
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5 flex-shrink-0">

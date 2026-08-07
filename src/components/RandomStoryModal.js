@@ -71,7 +71,7 @@ const RandomStoryModal = () => {
       <Modal
         onClose={closeRandomStory}
         backdropClassName="absolute inset-0 bg-black/80 backdrop-blur-md"
-        panelClassName="relative w-full max-w-2xl max-h-[85vh] overflow-x-hidden overflow-y-auto bg-slate-900/40 backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)]"
+        panelClassName="relative w-full max-w-2xl max-h-[85vh] overflow-x-hidden overflow-y-auto no-scrollbar bg-slate-900/40 backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         {/* Subtle Glows */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
